@@ -144,7 +144,6 @@ class BookingAdmin(admin.ModelAdmin):
         subject = f"Booking Status Changed: {booking.booking_id}"
         approval_url = 'https://chat.openai.com/c/1a28a960-3619-471f-9396-9d816dfa30b9'
         message = render_to_string('email_templates/booking_status_change.html', {'booking': booking, 'approval_url': approval_url})
-        message = strip_tags(message)
         
         email = Email.objects.create(
             subject=subject,
