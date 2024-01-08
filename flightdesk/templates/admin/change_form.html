@@ -1,0 +1,11 @@
+{% block after_field_sets %}
+
+{% if original.status != instance.status %}
+
+<div>
+  <input type="checkbox" name="send_email"> Send Email
+</div>
+
+{% endif %}
+
+{% endblock %}
