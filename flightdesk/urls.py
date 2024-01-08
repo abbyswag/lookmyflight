@@ -1,8 +1,6 @@
 from django.urls import path
-from .views import BookingApprovalView, SaveImageView
-from .admin import BookingAdmin
+from .views import approve_booking
 
 urlpatterns = [
-    path('booking/approval/<int:booking_id>/', BookingApprovalView.as_view(), name='booking_approval'),
-    path('save_ticket_image/', SaveImageView.as_view(), name='admin_save_ticket_image'),
+    path('bid/<str:bid_id>/approve/', approve_booking, name='approve-booking'),
 ]

@@ -21,11 +21,9 @@ from django.conf.urls.static import static
 # from django.utils.translation import ugettext as ugettext_lazy
 
 urlpatterns = [
-	# path('jet/', include('jet.urls', 'jet')), 
     path('admin/', admin.site.urls),
     path('admin_tools_stats/', include('admin_tools_stats.urls')),
     path('/', include('flightdesk.urls')),
-    # path('admin_tools_stats/', include('admin_tools_stats.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 admin.AdminSite.site_header = "LTE Administration"
