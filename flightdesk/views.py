@@ -1,17 +1,13 @@
 from django.shortcuts import render, get_object_or_404
 from django.contrib import messages 
-from .models import BID
+from .models import MyBooking
 
 
-def approve_booking(request, bid_id):
-
-  booking = get_object_or_404(BID, bid_id=bid_id)
-
+def approve_booking(request, mybooking_id):
+  booking = get_object_or_404(MyBooking, mybooking_id=mybooking_id)
   booking.status = 'allocating'
   booking.save()
-  
   messages.success(request, 'Booking approved.')
-
   return render(request, 'approved.html', {
-    'booking': booking  
+    'mybooking_id': mybooking_id
   })

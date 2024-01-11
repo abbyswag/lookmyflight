@@ -1,0 +1,98 @@
+{% extends './base.html' %}
+
+{% block content %}
+
+<!-- authorization sections -->
+<div>
+  <h2 style="text-align: center;">Please Confirm This Booking</h2>
+  <p style="text-align: center;">
+  I, {{card_holder_name}} has authorize LOOKMYFLIGHT to confirm my booking by charging my Credit/Debit card, ending with <b>{{card_number}}</b> for amount ({{booking.currency}} <b>{{booking.amount}}</b>) to book the below itinerary.
+  </p>
+  <p style="text-align: center;">
+  Reservations once issued are Non Refundable and Non Transferable. Changes are subject to airline rules and regulations and may attract penalty and difference in fare and fees. Some reservations may completely be NON CHANGEABLE even with airline penalty.No airfare is guaranteed until tickets are issued.
+  </p>    
+</div>
+
+<!-- passenger detail sections -->
+<div>
+  <h2 class="highlited">Passengers Details</h2>
+  <table width="100%" border="1" cellpadding="5" cellspacing="0">
+    <thead>
+      <tr>
+        <th>Passenger Name</th>
+        <th>Date Of Birth</th>
+        <th>Gender</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for passenger in passengers %}
+      <tr>
+        <td>{{ passenger.full_passenger_name }}</td>
+        <td>{{ passenger.date_of_birth }}</td>
+        <td>{{ passenger.gender }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<br>
+
+<!-- flight detail sections -->
+<div>
+  <h2 class="highlited">Flights Details</h2>
+  {% for flight in flights %}
+  <div style="display: flex; padding: 0.5rem; background-color: rgb(209, 215, 184); justify-content: space-evenly;">
+    <div>
+        <p>{{flight.from_location}} <br> {{flight.departure_datetime}}</p>
+        <p>{{flight.to_location }} <br> {{flight.arrival_datetime}}</p>
+    </div>
+    <div>
+        <p>Carrier : {{flight.airline_name}}</p>
+        <p>Fight No: {{flight.flight_number}}</p>
+        <p>Duration: {{flight.duration}}</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+<br>
+
+<!-- price details -->
+<div>
+  <h2 class="highlited">Price Details</h2>
+  <table width="100%" border="1" cellpadding="5" cellspacing="0">
+    <thead>
+      <tr>
+        <th>Traveler Type</th>
+        <th>Ticket Price</th>
+        <th>Tax & Fee</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ adult_count }} Adult/s</td>
+        <td>$ {{ airline_cost }}</td>
+        <td>$ {{ tax_fee }}</td>
+        <td>$ {{ booking.amount }}</td>
+      </tr>
+      <tr bgcolor="#FFFFCC">
+        <td colspan="3"><strong>Total Flight Booking Amount:</strong></td>
+        <td><strong>USD$ {{ booking.amount }}</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<br>
+
+<div>
+  <p style="text-align: center;"> You may see more than one transaction on your card but will not exceed the total amount as advised.</p>
+  <p style="text-align: center;">By Clicking on the Authorize button, you agree to the above mentioned terms.</p>
+  <br>
+  <div style="display: flex; justify-content: space-between;">
+    <p>Agent Name: {{booking.added_by}} <br> Contact No: {{booking.added_by.email}}</p>
+    <a href="{{ approval_url }}"><button style="background-color: rgb(233, 142, 105);">Authorize</button></a>
+  </div>
+</div>
+<br>
+
+{% endblock %}

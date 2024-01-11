@@ -2,16 +2,15 @@ from django.contrib import admin
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.utils.html import format_html
-from django.contrib.admin.widgets import AdminFileWidget
 from django.conf import settings
 from django.urls import reverse
-from datetime import datetime, timedelta
+from .utils import req
+from .models import Passenger, BillingInformation, CallLog, MyBooking, Email, Refund, FutureCredit, FlightDetails, EmailAttachtment
 
-from .models import Passenger, BillingInformation, CallLog, BID, Email, Refund, FutureCredit
 
 class CallLogAdmin(admin.ModelAdmin):
     list_display = ('customer_name', 'call_date', 'category')
-    exclude = ('added_by',)
+    exclude = ('added_by', 'object_id', 'content_type')
 
     def save_model(self, request, obj, form, change):
         obj.added_by = request.user
@@ -59,36 +58,26 @@ class BillingInformationInline(admin.StackedInline):
     extra = 1
 
 
-class CustomAdminFileWidget(AdminFileWidget):
-    def render(self, name, value, attrs=None, renderer=None):
-        result = []
-        if hasattr(value, "url"):
-            result.append(
-                f'''<a href="{value.url}" target="_blank">
-                      <img 
-                        src="{value.url}" alt="{value}" 
-                        width="100" height="100"
-                        style="object-fit: cover;"
-                      />
-                    </a>'''
-            )
-        result.append(super().render(name, value, attrs, renderer))
-        return format_html("".join(result))
-    
+class FlightDetailsInline(admin.StackedInline):
+    model = FlightDetails
+    can_delete = False
+    verbose_name_plural = "Flight Details"
+    extra = 1
+
 
 class BookingAdmin(admin.ModelAdmin):
-    list_display = ('bid_id', 'customer_name', 'amount', 'status', 'mco')
+    list_display = ('mybooking_id', 'customer_name', 'amount', 'status', 'mco')
     exclude = ('added_by',)
     actions = ['send_email']
-    inlines = [BillingInformationInline, PassengerInline]
+    inlines = [BillingInformationInline, PassengerInline, FlightDetailsInline]
     list_filter = (BookingStatusFilter, 'created_at')
     fieldsets = (
-        ('Basic Information', {
+        ('General', {
             'fields': ('currency', 'amount','status', 'mco', 'agent_remarks')
         }),
-        ('Flight Information', {
-            'fields': ('airline_name','airline_cost', 'flight_number', 'from_location', 'to_location', 'departure_datetime', 'arrival_datetime','gds_pnr')
-        }),
+        ('ticket/pass', {
+            'fields': ('e_ticket', 'boarding_pass')
+        })
     )
 
     def save_model(self, request, obj, form, change):
@@ -119,27 +108,45 @@ class BookingAdmin(admin.ModelAdmin):
             self.create_auth_draft(obj)
         elif change and obj.status == 'confirmed' and old_obj.status == 'allocating':
             self.create_conf_draft(obj)
+        elif change and obj.status == 'cleared' and old_obj.status == 'confirmed':
+            self.create_clrd_draft(obj)
 
     def create_auth_draft(self, booking):
-        subject = f"Booking Authorization Started: {booking.bid_id}" 
-        template = 'email_templates/bid_auth.html'
-        approval_url = reverse('approve-booking', args=[booking.bid_id])
+        subject = f"Booking Authorization Started: {booking.mybooking_id}" 
+        template = 'email_templates/mybooking_auth.html'
+        approval_url = reverse('approve-booking', args=[booking.mybooking_id])
         passengers = booking.passenger_set.all()
-        tax_fee = booking.amount - booking.airline_cost
+        billing = booking.billinginformation_set.all()
+        card_number = billing[0].card_number[-4:]
+        card_holder_name = billing[0].card_holder_name
+        flights = booking.flightdetails_set.all()
+        airline_cost = sum([f.airline_cost for f in flights])
+        tax_fee = booking.amount - airline_cost
         adult_count = len(passengers)
-        message = render_to_string(template, {'booking': booking, 'approval_url': approval_url, 'passengers': passengers, 'tax_fee': tax_fee, 'adult_count': adult_count})
+        message = render_to_string(template, {'booking': booking, 
+                                              'approval_url': req + approval_url, 
+                                              'passengers': passengers, 
+                                              'tax_fee': tax_fee, 
+                                              'airline_cost': airline_cost,
+                                              'adult_count': adult_count, 
+                                              'flights': flights,
+                                              'card_number': card_number,
+                                              'card_holder_name': card_holder_name})
         email = Email.objects.create(
             subject=subject,
             body=message,
             recipient=booking.call_logs.first().email,
             status='draft',
+            added_by=booking.added_by
         )
         email.content_subtype = 'plain' 
         email.save()
 
     def create_conf_draft(self, booking):
-        subject = f"Booking Confirmed: {booking.booking_id}"
-        message = render_to_string('email_templates/bid_conf.html', {'booking': booking})
+        subject = f"Booking Confirmed: {booking.mybooking_id}"
+        if booking.e_ticket:
+            ticket_url = booking.e_ticket.url
+        message = render_to_string('email_templates/mybooking_conf.html', {'ticket_url': req + ticket_url})
         email = Email.objects.create(
             subject=subject,
             body=message,
@@ -149,10 +156,58 @@ class BookingAdmin(admin.ModelAdmin):
         email.content_subtype = 'plain' 
         email.save()
 
+    def create_clrd_draft(self, booking):
+        subject = f"Booking Cleared: {booking.mybooking_id}"
+        if booking.boarding_pass:
+            pass_url = booking.boarding_pass.url
+        pass
+        message = render_to_string('email_templates/mybooking_clrd.html', {'pass_url': req + pass_url})
+        email = Email.objects.create(
+            subject=subject,
+            body=message,
+            recipient=booking.call_logs.first().email,
+            status='draft',
+        )
+        email.content_subtype = 'plain' 
+        email.save()
+
+class EmailAttachtmentInline(admin.StackedInline):
+    model = EmailAttachtment
+    can_delete = False
+    verbose_name_plural = "Attachment"
+    extra = 1    
+
 
 class EmailAdmin(admin.ModelAdmin):
     list_display = ('subject', 'recipient', 'status')
+    inlines = [EmailAttachtmentInline]
     actions = ['send_selected_emails']
+    readonly_fields = ('preview', )
+    fieldsets = (
+        ('Preview', {
+            'fields': ('preview',)
+        }),        
+        ('General', {
+            'fields': ('subject', 'recipient', 'body', 'status')
+        }),
+    )
+
+    def preview(self, instance):
+        html_content = instance.body
+        return format_html(html_content)
+    
+    def get_list_filter(self, request):
+        if request.user.groups.filter(name='supervisor').exists():
+            self.list_filter = ('added_by',)
+        return super().get_list_filter(request)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        
+        if request.user.groups.filter(name='agent').exists():
+            return qs.filter(added_by=request.user)
+        return qs
+    
     def send_selected_emails(modeladmin, request, queryset):
         for email in queryset:
             if email.status == 'draft':
@@ -167,6 +222,7 @@ class EmailAdmin(admin.ModelAdmin):
                 email.status = 'sent'
                 email.save()
 
+    preview.short_description = ''
     send_selected_emails.short_description = 'Send selected emails'
 
 
@@ -189,5 +245,5 @@ class FutureCreditAdmin(admin.ModelAdmin):
 admin.site.register(FutureCredit, FutureCreditAdmin)
 admin.site.register(Email, EmailAdmin)
 admin.site.register(CallLog, CallLogAdmin)
-admin.site.register(BID, BookingAdmin)
+admin.site.register(MyBooking, BookingAdmin)
 admin.site.register(Refund, RefundAdmin)
