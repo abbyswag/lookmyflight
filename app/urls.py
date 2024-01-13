@@ -26,5 +26,5 @@ urlpatterns = [
     path('/', include('flightdesk.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-admin.AdminSite.site_header = "LTE Administration"
-admin.AdminSite.site_title = "LTE"
+admin.AdminSite.site_header = "LET Administration"
+admin.AdminSite.site_title = "LET"

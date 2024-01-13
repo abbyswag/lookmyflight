@@ -4,7 +4,7 @@ from django.core.mail import send_mail
 from django.utils.html import format_html
 from django.conf import settings
 from django.urls import reverse
-from .utils import req
+import os
 from .models import Passenger, BillingInformation, CallLog, MyBooking, Email, Refund, FutureCredit, FlightDetails, EmailAttachtment
 
 
@@ -124,7 +124,7 @@ class BookingAdmin(admin.ModelAdmin):
         tax_fee = booking.amount - airline_cost
         adult_count = len(passengers)
         message = render_to_string(template, {'booking': booking, 
-                                              'approval_url': req + approval_url, 
+                                              'approval_url': os.getenv('HOST_URL') + approval_url, 
                                               'passengers': passengers, 
                                               'tax_fee': tax_fee, 
                                               'airline_cost': airline_cost,
@@ -146,7 +146,7 @@ class BookingAdmin(admin.ModelAdmin):
         subject = f"Booking Confirmed: {booking.mybooking_id}"
         if booking.e_ticket:
             ticket_url = booking.e_ticket.url
-        message = render_to_string('email_templates/mybooking_conf.html', {'ticket_url': req + ticket_url})
+        message = render_to_string('email_templates/mybooking_conf.html', {'ticket_url': os.getenv('HOST_URL') + ticket_url})
         email = Email.objects.create(
             subject=subject,
             body=message,
@@ -161,7 +161,7 @@ class BookingAdmin(admin.ModelAdmin):
         if booking.boarding_pass:
             pass_url = booking.boarding_pass.url
         pass
-        message = render_to_string('email_templates/mybooking_clrd.html', {'pass_url': req + pass_url})
+        message = render_to_string('email_templates/mybooking_clrd.html', {'pass_url': os.getenv('HOST_URL') + pass_url})
         email = Email.objects.create(
             subject=subject,
             body=message,

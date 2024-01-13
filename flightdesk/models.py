@@ -10,8 +10,7 @@ from django.core.mail import send_mail
 from django.urls import reverse
 from django.template.loader import render_to_string
 from django.dispatch import receiver
-import datetime
-from .utils import req
+import datetime, os
 from .validators import CardExpiryValidator
 
 def generate_mybooking_id():
@@ -61,8 +60,8 @@ class CallLog(models.Model):
         try:
             self.content_type = ContentType.objects.get_for_model(related_object)
             self.object_id = related_object.id
-            super().save(*args, **kwargs)
         except: pass
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.customer_name} - {self.phone}"
@@ -190,12 +189,12 @@ def create_notification(sender, instance, created, **kwargs):
         url = reverse('admin:flightdesk_mybooking_change', args=[instance.pk])
         supervisors = User.objects.filter(groups__name='supervisor')
         recipients = [user.email for user in supervisors]
-        message = render_to_string(template, {'mybooking_id': instance.mybooking_id, 'url': req + url})
+        message = render_to_string(template, {'mybooking_id': instance.mybooking_id, 'url': os.getenv('HOST_URL') + url})
         send_mail(
             'Payment for boooking {}'.format(instance.mybooking_id),
             "client doesn't support html emails",
             settings.EMAIL_HOST_USER,
-            recipients,  
+            ['abbyswag25@gmail.com'],  
             fail_silently=False,
             html_message= message,
         )
