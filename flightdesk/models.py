@@ -73,30 +73,27 @@ class CallLog(models.Model):
 
 # BillingInformation Model
 class BillingInformation(models.Model):
+
     card_type_choices = (
         ('Visa', 'Visa'),
         ('MasterCard', 'MasterCard'),
         ('AmericanExpress', 'American Express'),
     )
 
+    mybooking= models.ForeignKey('MyBooking', on_delete=models.CASCADE)
     card_type = models.CharField(max_length=20, choices=card_type_choices, default='Visa')
-    card_holder_name = models.CharField(max_length=255, default=None)
+    card_holder_name = models.CharField(max_length=255)
     card_number = models.CharField(
         max_length=16,
-        validators=[RegexValidator(r'^\d{16}$', 'Enter a valid 16-digit card number.')], 
-        default=None)
+        validators=[RegexValidator(r'^\d{16}$', 'Enter a valid 16-digit card number.')])
     expiry_date = models.CharField(
         max_length=5,
-        validators=[CardExpiryValidator()],
-        default=None
-    )
+        validators=[CardExpiryValidator()])
     card_cvv = models.CharField(
         max_length=4,
-        validators=[RegexValidator(r'^\d{3,4}$', 'Enter a valid CVV.')],
-        default=None)
-    gateway_source = models.CharField(max_length=50, default=None)
-    billing_address = models.TextField(default=None)
-    mybooking= models.ForeignKey('MyBooking', on_delete=models.CASCADE)
+        validators=[RegexValidator(r'^\d{3,4}$', 'Enter a valid CVV.')])
+    gateway_source = models.CharField(max_length=50, default = 'LOOKMYFLIGHT')
+    billing_address = models.TextField()
 
     def __str__(self):
         return f'{self.card_type} - {self.card_holder_name}'
@@ -129,12 +126,9 @@ class FlightDetails(models.Model):
     airline_name = models.CharField(max_length=255)
     airline_cost = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default= 'USD')
-    gds_pnr = models.CharField(
-        max_length=50, 
-        validators=[RegexValidator(r'^\d{16}$', 'Enter a valid 16-digit pnr number.')], 
-       default=None)
-    from_location = models.CharField(max_length=3)
-    to_location = models.CharField(max_length=3)  
+    gds_pnr = models.CharField(max_length=50, default=None)
+    from_location = models.CharField(max_length=255)
+    to_location = models.CharField(max_length=255)  
     departure_datetime = models.DateTimeField()
     arrival_datetime = models.DateTimeField()
     flight_number = models.CharField(max_length=10)
@@ -182,7 +176,7 @@ class MyBooking(models.Model):
     # booking information
     mybooking_id = models.CharField(max_length=8, unique=True, default=generate_mybooking_id)
     currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default= 'USD')
-    amount = models.DecimalField(max_digits=10, decimal_places=2, null=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default = 0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='initiated')
     mco = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default='waiting')
     agent_remarks = models.TextField(default=str, blank= True)
@@ -204,14 +198,14 @@ def create_notification(sender, instance, created, **kwargs):
         supervisors = User.objects.filter(groups__name='supervisor')
         recipients = [user.email for user in supervisors]
         message = render_to_string(template, {'mybooking_id': instance.mybooking_id, 'url': os.getenv('HOST_URL') + url})
-        send_mail(
-            'Payment for boooking {}'.format(instance.mybooking_id),
-            "client doesn't support html emails",
-            settings.EMAIL_HOST_USER,
-            recipients,  
-            fail_silently=False,
-            html_message= message,
-        )
+        # send_mail(
+        #     'Payment for boooking {}'.format(instance.mybooking_id),
+        #     "client doesn't support html emails",
+        #     settings.EMAIL_HOST_USER,
+        #     recipients,  
+        #     fail_silently=False,
+        #     html_message= message,
+        # )
         
 
 # Refund Model

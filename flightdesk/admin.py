@@ -5,6 +5,7 @@ from django.utils.html import format_html
 from django.conf import settings
 from django.urls import reverse
 import os
+from .utils import send_email, save_email, create_auth_draft
 from .models import Passenger, BillingInformation, CallLog, MyBooking, Email, Refund, FutureCredit, FlightDetails, EmailAttachtment
 
 class CallLogAdmin(admin.ModelAdmin):
@@ -65,14 +66,14 @@ class FlightDetailsInline(admin.StackedInline):
 
 
 class BookingAdmin(admin.ModelAdmin):
-    list_display = ('mybooking_id', 'customer_name', 'amount', 'status', 'mco')
-    exclude = ('added_by',)
-    actions = ['send_email']
+    list_display = ('mybooking_id', 'customer_name', 'amount', 'status')
+    exclude = ('added_by', )
+    actions = ['draft_approval_email' ,'send_approval_email', 'send_ticket', 'send_boarding_pass']
     inlines = [BillingInformationInline, PassengerInline, FlightDetailsInline]
     list_filter = (BookingStatusFilter, 'created_at')
     fieldsets = (
         ('General', {
-            'fields': ('currency', 'amount','status', 'mco', 'agent_remarks')
+            'fields': ('currency', 'amount', 'mco', 'agent_remarks')
         }),
         ('ticket/pass', {
             'fields': ('e_ticket', 'boarding_pass')
@@ -96,81 +97,87 @@ class BookingAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         obj.added_by = request.user
-        old_obj = self.model.objects.get(pk=obj.pk) if change else None  
         super().save_model(request, obj, form, change)
-        if change and obj.status == 'authorizing' and old_obj.status == 'initiated':
-            self.create_auth_draft(obj)
-        elif change and obj.status == 'confirmed' and old_obj.status == 'allocating':
-            self.create_conf_draft(obj)
-        elif change and obj.status == 'cleared' and old_obj.status == 'confirmed':
-            self.create_clrd_draft(obj)
 
-    def create_auth_draft(self, booking):
-        subject = f"Booking Authorization Started: {booking.mybooking_id}" 
-        template = 'email_templates/mybooking_auth.html'
-        approval_url = reverse('approve-booking', args=[booking.mybooking_id])
-        passengers = booking.passenger_set.all()
-        billing = booking.billinginformation_set.all()
-        card_number = billing[0].card_number[-4:]
-        card_holder_name = billing[0].card_holder_name
-        flights = booking.flightdetails_set.all()
-        airline_cost = sum([f.airline_cost for f in flights])
-        tax_fee = booking.amount - airline_cost
-        adult_count = len(passengers)
-        message = render_to_string(template, {'booking': booking, 
-                                              'approval_url': os.getenv('HOST_URL') + approval_url, 
-                                              'passengers': passengers, 
-                                              'tax_fee': tax_fee, 
-                                              'airline_cost': airline_cost,
-                                              'adult_count': adult_count, 
-                                              'flights': flights,
-                                              'card_number': card_number,
-                                              'card_holder_name': card_holder_name})
-        email = Email.objects.create(
-            subject=subject,
-            body=message,
-            recipient=booking.call_logs.first().email,
-            status='draft',
-            added_by=booking.added_by
-        )
-        email.content_subtype = 'plain' 
-        email.save()
+    def draft_approval_email(self, request, queryset):
+        self.send_approval_email(request, queryset, False)
+        # self.message_user(request, f'{queryset.count()} booking(s) authorization mail draft created.')
+    draft_approval_email.short_description = 'draft approval email'
 
-    def create_conf_draft(self, booking):
-        subject = f"Booking Confirmed: {booking.mybooking_id}"
-        if booking.e_ticket:
-            ticket_url = booking.e_ticket.url
-        message = render_to_string('email_templates/mybooking_conf.html', {'ticket_url': os.getenv('HOST_URL') + ticket_url})
-        email = Email.objects.create(
-            subject=subject,
-            body=message,
-            recipient=booking.call_logs.first().email,
-            status='draft',
-        )
-        email.content_subtype = 'plain' 
-        email.save()
+    def send_approval_email(self, request, queryset, status= True):
+        flag = False
+        for booking in queryset:
+            if booking.status == 'authorizing':
+                flag = True
+                self.message_user(request, f'{queryset.count()} booking(s) approval email already sended (No need to send multiple time).')
+            else:
+                subject = f"Booking Authorization Started: {booking.mybooking_id}" 
+                recipient = booking.call_logs.first().email
+                message = create_auth_draft(booking)
+                if message is not None:
+                    if status: 
+                        send_email(subject, recipient, message)
+                        save_email(subject, recipient, message, booking.added_by)
+                    else: 
+                        save_email(subject, recipient, message, booking.added_by, 'draft')
+                    booking.status = 'authorizing'
+                    booking.save()
+                else:
+                    flag = True
+                    self.message_user(request, f'{queryset.count()} booking(s) approval email not sended (Please fill the details first).')
+        if not flag:
+            self.message_user(request, f'{queryset.count()} booking(s) authorization mail sended successfully.')
+    send_approval_email.short_description = "send approval email"
+    
+    def send_ticket(self, request, queryset):
+        flag = False
+        for booking in queryset:
+            if booking.status == 'allocating':
+                subject = f"Booking Confirmed: {booking.mybooking_id}"
+                recipient=booking.call_logs.first().email
+                if booking.e_ticket: ticket_url = booking.e_ticket.url
+                else: 
+                    flag = True
+                    self.message_user(request, 'Please upload the e-ticket first')
+                message = render_to_string('email_templates/mybooking_conf.html', {'ticket_url': os.getenv('HOST_URL') + ticket_url})
+                send_email(subject, recipient, message)
+                save_email(subject, recipient, message, booking.added_by)
+                booking.status = 'confirmed'
+                booking.save()
+            else: 
+                flag = True
+                self.message_user(request, 'You can send ticket email after allocation')
+        if not flag:
+            self.message_user(request, f'{queryset.count()} booking(s) ticket email sended successfully.')
+    send_ticket.short_description = 'sent ticket email'
 
-    def create_clrd_draft(self, booking):
-        subject = f"Booking Cleared: {booking.mybooking_id}"
-        if booking.boarding_pass:
-            pass_url = booking.boarding_pass.url
-        pass
-        message = render_to_string('email_templates/mybooking_clrd.html', {'pass_url': os.getenv('HOST_URL') + pass_url})
-        email = Email.objects.create(
-            subject=subject,
-            body=message,
-            recipient=booking.call_logs.first().email,
-            status='draft',
-        )
-        email.content_subtype = 'plain' 
-        email.save()
+    def send_boarding_pass(self, request, queryset):
+        flag = False
+        for booking in queryset:
+            if booking.status == 'confirmed':
+                subject = f"Booking Cleared: {booking.mybooking_id}"
+                recipient=booking.call_logs.first().email
+                if booking.boarding_pass: pass_url = booking.boarding_pass.url
+                else: 
+                    flag = True
+                    self.message_user(request, 'Please upload the boarding pass first')
+                message = render_to_string('email_templates/mybooking_clrd.html', {'pass_url': os.getenv('HOST_URL') + pass_url})
+                send_email(subject, recipient, message)
+                save_email(subject, recipient, message, booking.added_by)
+                booking.status = 'confirmed'
+                booking.save()
+            else: 
+                flag = True
+                self.message_user(request, 'You can send boarding pass email after confirmation')
+        if not flag:
+            self.message_user(request, f'{queryset.count()} booking(s) boarding pass email sended successfully.')
+    send_boarding_pass.short_description = 'sent boarding pass email'
 
 class EmailAttachtmentInline(admin.StackedInline):
     model = EmailAttachtment
     can_delete = False
     verbose_name_plural = "Attachment"
     extra = 1    
-
 
 class EmailAdmin(admin.ModelAdmin):
     list_display = ('subject', 'recipient', 'status')
