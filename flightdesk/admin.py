@@ -7,7 +7,6 @@ from django.urls import reverse
 import os
 from .models import Passenger, BillingInformation, CallLog, MyBooking, Email, Refund, FutureCredit, FlightDetails, EmailAttachtment
 
-
 class CallLogAdmin(admin.ModelAdmin):
     list_display = ('customer_name', 'call_date', 'category')
     exclude = ('added_by', 'object_id', 'content_type')
@@ -80,10 +79,6 @@ class BookingAdmin(admin.ModelAdmin):
         })
     )
 
-    def save_model(self, request, obj, form, change):
-        obj.added_by = request.user
-        super().save_model(request, obj, form, change)
-
     def get_list_filter(self, request):
         if request.user.groups.filter(name='supervisor').exists():
             self.list_filter = ('added_by',)
@@ -102,7 +97,6 @@ class BookingAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         obj.added_by = request.user
         old_obj = self.model.objects.get(pk=obj.pk) if change else None  
-
         super().save_model(request, obj, form, change)
         if change and obj.status == 'authorizing' and old_obj.status == 'initiated':
             self.create_auth_draft(obj)

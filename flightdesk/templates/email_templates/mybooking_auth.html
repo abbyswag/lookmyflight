@@ -26,8 +26,8 @@
     </thead>
     <tbody>
       {% for passenger in passengers %}
-      <tr>
-        <td>{{ passenger.full_passenger_name }}</td>
+      <tr style="text-align: center;">
+        <td >{{ passenger.full_passenger_name }}</td>
         <td>{{ passenger.date_of_birth }}</td>
         <td>{{ passenger.gender }}</td>
       </tr>
@@ -41,7 +41,7 @@
 <div>
   <h2 class="highlited">Flights Details</h2>
   {% for flight in flights %}
-  <div style="display: flex; padding: 0.5rem; border: solid #000 1px; justify-content: space-evenly; width: 100%; align-items: center;">
+  <div style="display: flex; padding: 0.5rem; border: solid #000 1px; justify-content: space-between; width: 95vw; align-items: center;">
     <div>
         <p>{{flight.from_location}} <br> {{flight.departure_datetime}}</p>
         <p>{{flight.to_location }} <br> {{flight.arrival_datetime}}</p>
@@ -50,6 +50,7 @@
         <p>Carrier : {{flight.airline_name}}</p>
         <p>Fight No: {{flight.flight_number}}</p>
         <p>Duration: {{flight.duration}}</p>
+        <p>PNR: {{flight.gds_pnr}}</p>
     </div>
   </div>
   {% endfor %}
@@ -69,7 +70,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr>
+      <tr style="text-align: center;">
         <td>{{ adult_count }} Adult/s</td>
         <td>$ {{ airline_cost }}</td>
         <td>$ {{ tax_fee }}</td>
@@ -88,7 +89,7 @@
   <p style="text-align: center;"> You may see more than one transaction on your card but will not exceed the total amount as advised.</p>
   <p style="text-align: center;">By Clicking on the Authorize button, you agree to the above mentioned terms.</p>
   <br>
-  <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+  <div style="display: flex; justify-content: space-between; width: 95vw; align-items: center;">
     <p>Agent: {{booking.added_by}} <br> Contact: {{booking.added_by.email}}</p>
     <a href="{{ approval_url }}"><button style="background-color: rgb(233, 142, 105);">Authorize</button></a>
   </div>

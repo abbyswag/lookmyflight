@@ -1,18 +1,19 @@
 from django.db import models
-from django.conf import settings
-from django.core.validators import RegexValidator
-from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes.fields import GenericRelation
-from django.db.models.signals import post_save
-from django.contrib.auth.models import User
-from django.core.mail import send_mail
 from django.urls import reverse
-from django.template.loader import render_to_string
+from django.conf import settings
 from django.dispatch import receiver
-import datetime, os
+from django.core.mail import send_mail
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.core.validators import RegexValidator
+from django.template.loader import render_to_string
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+
+import datetime, os, pickle
 from .validators import CardExpiryValidator
 
+# utils functions/scripts
 def generate_mybooking_id():
     today = datetime.datetime.now().strftime('%y%m%d')
     existing_mybookings = MyBooking.objects.filter(mybooking_id__startswith=f'LM{today}')
@@ -26,6 +27,9 @@ def generate_mybooking_id():
     
     return f'LM{today}{str(new_number).zfill(3)}'
 
+file_path = os.path.join(settings.BASE_DIR,'flightdesk/airport_data')
+with open(file_path, 'rb') as file:
+    airport_dict = pickle.load(file)
 
 # Calllog Model
 class CallLog(models.Model):
@@ -90,7 +94,7 @@ class BillingInformation(models.Model):
         max_length=4,
         validators=[RegexValidator(r'^\d{3,4}$', 'Enter a valid CVV.')],
         default=None)
-    gateway_source = models.CharField(max_length=255, default=None)
+    gateway_source = models.CharField(max_length=50, default=None)
     billing_address = models.TextField(default=None)
     mybooking= models.ForeignKey('MyBooking', on_delete=models.CASCADE)
 
@@ -122,23 +126,33 @@ class FlightDetails(models.Model):
         
     mybooking = models.ForeignKey('MyBooking', on_delete=models.CASCADE)
 
-    airline_name = models.CharField(max_length=255, blank=True, null=True)
-    airline_cost = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    airline_name = models.CharField(max_length=255)
+    airline_cost = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default= 'USD')
-    gds_pnr = models.CharField(max_length=50, default=None, blank= True, null=True)
-    from_location = models.CharField(max_length=255, blank= True, null=True)
-    to_location = models.CharField(max_length=255, blank= True, null=True)  
-    departure_datetime = models.DateTimeField(blank= True, null=True)
-    arrival_datetime = models.DateTimeField(blank= True, null=True)
-    flight_number = models.CharField(max_length=10, blank= True, null=True)
+    gds_pnr = models.CharField(
+        max_length=50, 
+        validators=[RegexValidator(r'^\d{16}$', 'Enter a valid 16-digit pnr number.')], 
+       default=None)
+    from_location = models.CharField(max_length=3)
+    to_location = models.CharField(max_length=3)  
+    departure_datetime = models.DateTimeField()
+    arrival_datetime = models.DateTimeField()
+    flight_number = models.CharField(max_length=10)
 
     @property
     def duration(self):
         return self.arrival_datetime - self.departure_datetime
+    
+    def set_airport_names_from_iata_code(self):
+        self.from_location = airport_dict.get(self.from_location.upper())
+        self.to_location = airport_dict.get(self.to_location.upper())
+
+    def save(self, *args, **kwargs):
+        self.set_airport_names_from_iata_code()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'FlightDetails for MyBooking ID: {self.mybooking.mybooking_id}'
-    
 
 # MyBooking model
 class MyBooking(models.Model):
@@ -170,7 +184,7 @@ class MyBooking(models.Model):
     currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default= 'USD')
     amount = models.DecimalField(max_digits=10, decimal_places=2, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='initiated')
-    mco = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default='initiated')
+    mco = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default='waiting')
     agent_remarks = models.TextField(default=str, blank= True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -194,7 +208,7 @@ def create_notification(sender, instance, created, **kwargs):
             'Payment for boooking {}'.format(instance.mybooking_id),
             "client doesn't support html emails",
             settings.EMAIL_HOST_USER,
-            ['abbyswag25@gmail.com'],  
+            recipients,  
             fail_silently=False,
             html_message= message,
         )
