@@ -34,9 +34,8 @@ with open(file_path, 'rb') as file:
 # Calllog Model
 class CallLog(models.Model):
     CATEGORY_CHOICES = (
-        ('MyBooking', 'MyBooking'),
-        ('Refund', 'Refund'),
-        ('FutureCredit', 'Future Credit'),
+        ('New Booking', 'New Booking'),
+        ('Cancelation', 'Cancelation'),
         ('Other', 'Other'),
     )
 
@@ -54,9 +53,9 @@ class CallLog(models.Model):
     remark = models.TextField(blank=True)
 
     def save(self, *args, **kwargs):
-        if self.category == 'MyBooking':
+        if self.category == 'New Booking':
             related_object = MyBooking.objects.create(added_by=self.added_by)
-        elif self.category == 'Refund':
+        elif self.category == 'Cancelation':
             related_object = Refund.objects.create()
         else:
             related_object = None
@@ -192,7 +191,7 @@ class MyBooking(models.Model):
 
 @receiver(post_save, sender=MyBooking)
 def create_notification(sender, instance, created, **kwargs):
-    if not created and instance.status == 'authorizing':
+    if not created and instance.status == 'allocating':
         template = 'email_templates/mybooking_notification.html'
         url = reverse('admin:flightdesk_mybooking_change', args=[instance.pk])
         supervisors = User.objects.filter(groups__name='supervisor')

@@ -4,13 +4,36 @@ from django.core.mail import send_mail
 from django.utils.html import format_html
 from django.conf import settings
 from django.urls import reverse
+from django.db.models import Q
 import os
 from .utils import send_email, save_email, create_auth_draft
 from .models import Passenger, BillingInformation, CallLog, MyBooking, Email, Refund, FutureCredit, FlightDetails, EmailAttachtment
 
+class CustomerNameRegexFilter(admin.SimpleListFilter):
+  title = 'customer name'
+  parameter_name = 'customer_name'
+
+  def lookups(self, request, model_admin):    
+    customer_names = CallLog.objects.values_list('customer_name', flat=True).distinct()
+    customer_lookups = [(name, name) for name in customer_names]
+
+    return customer_lookups
+
+  def queryset(self, request, queryset):
+    if self.value():
+        regex = r'(?i).*%s$' % self.pattern
+        return queryset.filter(Q(customer_name__iregex=regex))
+      
+    return queryset
+
+  @property
+  def pattern(self):
+    return self.used_parameters.get('customer_name')
+
 class CallLogAdmin(admin.ModelAdmin):
     list_display = ('customer_name', 'call_date', 'category')
     exclude = ('added_by', 'object_id', 'content_type')
+    list_filter = ('call_date', 'category', CustomerNameRegexFilter, )
 
     def save_model(self, request, obj, form, change):
         obj.added_by = request.user
@@ -18,7 +41,7 @@ class CallLogAdmin(admin.ModelAdmin):
 
     def get_list_filter(self, request):
         if request.user.groups.filter(name='supervisor').exists():
-            self.list_filter = ('added_by',)
+            self.list_filter = ('added_by','call_date', 'category', CustomerNameRegexFilter, )
         return super().get_list_filter(request)
 
     def get_queryset(self, request):
@@ -70,7 +93,7 @@ class BookingAdmin(admin.ModelAdmin):
     exclude = ('added_by', )
     actions = ['draft_approval_email' ,'send_approval_email', 'send_ticket', 'send_boarding_pass']
     inlines = [BillingInformationInline, PassengerInline, FlightDetailsInline]
-    list_filter = (BookingStatusFilter, 'created_at')
+    list_filter = (BookingStatusFilter, 'created_at',)
     fieldsets = (
         ('General', {
             'fields': ('currency', 'amount', 'mco', 'agent_remarks')
@@ -82,12 +105,11 @@ class BookingAdmin(admin.ModelAdmin):
 
     def get_list_filter(self, request):
         if request.user.groups.filter(name='supervisor').exists():
-            self.list_filter = ('added_by',)
+            self.list_filter = (BookingStatusFilter, 'created_at', 'added_by',)
         return super().get_list_filter(request)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        
         if request.user.groups.filter(name='agent').exists():
             return qs.filter(added_by=request.user)
         return qs
