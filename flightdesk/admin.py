@@ -139,6 +139,7 @@ class BookingAdmin(admin.ModelAdmin):
                 else: 
                     flag = True
                     self.message_user(request, 'Please upload the e-ticket first')
+                    break
                 message = render_to_string('email_templates/mybooking_conf.html', {'ticket_url': os.getenv('HOST_URL') + ticket_url})
                 send_email(subject, recipient, message)
                 save_email(subject, recipient, message, booking.added_by)
@@ -147,6 +148,7 @@ class BookingAdmin(admin.ModelAdmin):
             else: 
                 flag = True
                 self.message_user(request, 'You can send ticket email after allocation')
+                break
         if not flag:
             self.message_user(request, f'{queryset.count()} booking(s) ticket email sended successfully.')
     send_ticket.short_description = 'sent ticket email'
@@ -161,6 +163,7 @@ class BookingAdmin(admin.ModelAdmin):
                 else: 
                     flag = True
                     self.message_user(request, 'Please upload the boarding pass first')
+                    break
                 message = render_to_string('email_templates/mybooking_clrd.html', {'pass_url': os.getenv('HOST_URL') + pass_url})
                 send_email(subject, recipient, message)
                 save_email(subject, recipient, message, booking.added_by)
@@ -169,6 +172,7 @@ class BookingAdmin(admin.ModelAdmin):
             else: 
                 flag = True
                 self.message_user(request, 'You can send boarding pass email after confirmation')
+                break
         if not flag:
             self.message_user(request, f'{queryset.count()} booking(s) boarding pass email sended successfully.')
     send_boarding_pass.short_description = 'sent boarding pass email'
