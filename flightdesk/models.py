@@ -197,14 +197,14 @@ def create_notification(sender, instance, created, **kwargs):
         supervisors = User.objects.filter(groups__name='supervisor')
         recipients = [user.email for user in supervisors]
         message = render_to_string(template, {'mybooking_id': instance.mybooking_id, 'url': os.getenv('HOST_URL') + url})
-        # send_mail(
-        #     'Payment for boooking {}'.format(instance.mybooking_id),
-        #     "client doesn't support html emails",
-        #     settings.EMAIL_HOST_USER,
-        #     recipients,  
-        #     fail_silently=False,
-        #     html_message= message,
-        # )
+        send_mail(
+            'Payment for boooking {}'.format(instance.mybooking_id),
+            "client doesn't support html emails",
+            settings.EMAIL_HOST_USER,
+            recipients,  
+            fail_silently=False,
+            html_message= message,
+        )
         
 
 # Refund Model
