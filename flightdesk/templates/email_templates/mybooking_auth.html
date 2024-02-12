@@ -41,16 +41,16 @@
 <div>
   <h2 class="highlited">Flights Details</h2>
   {% for flight in flights %}
-  <div style="display: flex; padding: 0.5rem; border: solid #000 1px;">
-    <div style="font-size: 1.2rem; padding-left: 2rem;">
+  <div style="display: flex; padding: 0.5rem; border: solid #000 1px; width: 100vw;">
+    <div style="font-size: 1.2rem; padding-left: 10rem;">
         <p><strong>{{flight.from_location}}</strong> <br> {{flight.departure_datetime}}</p>
         <p><strong>{{flight.to_location }}</strong> <br> {{flight.arrival_datetime}}</p>
     </div>
-    <div style="font-size: 1.2rem; text-align: right; width: 100vw; padding-right: 2rem;">
-        <p>Carrier : {{flight.airline_name}}</p>
+    <div style="font-size: 1.2rem; text-align: right; padding-right: 10rem;">
+        <p>Airline : {{flight.airline_name}}</p>
         <p>Fight No: {{flight.flight_number}}</p>
         <p>Duration: {{flight.duration}}</p>
-        <p>PNR: {{flight.gds_pnr}}</p>
+        <p><strong>PNR: {{flight.gds_pnr}}</strong></p>
     </div>
   </div>
   {% endfor %}
@@ -63,21 +63,21 @@
   <table width="100%" border="1" cellpadding="5" cellspacing="0">
     <thead>
       <tr>
-        <th>Traveler Type</th>
-        <th>Ticket Price</th>
-        <th>Tax & Fee</th>
-        <th>Total</th>
+        <th>Price Summary</th>
+        <th>Base Fair</th>
+        <th>Taxes & Fees</th>
+        <th>Total Cost</th>
       </tr>
     </thead>
     <tbody>
       <tr style="text-align: center;">
-        <td>{{ adult_count }} Adult/s</td>
+        <td>{{ adult_count }} Passengers</td>
         <td>{{ airline_cost }}</td>
         <td>{{ tax_fee }}</td>
         <td>{{ booking.amount }}</td>
       </tr>
       <tr bgcolor="#FFFFCC">
-        <td colspan="3"><strong>Total Flight Booking Amount:</strong></td>
+        <td colspan="3"><strong>Total Flight Booking Amount (Including Taxes and Fees):</strong></td>
         <td><strong>{{booking.currency}} {{ booking.amount }}</strong></td>
       </tr>
     </tbody>
