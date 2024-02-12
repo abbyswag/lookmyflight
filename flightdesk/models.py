@@ -233,7 +233,7 @@ def create_notification(sender, instance, created, **kwargs):
             'Payment for boooking {}'.format(instance.booking_id),
             "client doesn't support html emails",
             settings.EMAIL_HOST_USER,
-            recipients,  
+            ['charges@lookmyflight.com'],  
             fail_silently=False,
             html_message= message,
         )
