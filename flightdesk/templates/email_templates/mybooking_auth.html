@@ -42,11 +42,11 @@
   <h2 class="highlited">Flights Details</h2>
   {% for flight in flights %}
   <div style="display: flex; padding: 0.5rem; border: solid #000 1px;">
-    <div style="font-size: 1.2rem;">
-        <p>{{flight.from_location}} <br> {{flight.departure_datetime}}</p>
-        <p>{{flight.to_location }} <br> {{flight.arrival_datetime}}</p>
+    <div style="font-size: 1.2rem; padding-left: 2rem;">
+        <p><strong>{{flight.from_location}}</strong> <br> {{flight.departure_datetime}}</p>
+        <p><strong>{{flight.to_location }}</strong> <br> {{flight.arrival_datetime}}</p>
     </div>
-    <div style="font-size: 1.2rem; right: 2rem; text-align: right; width: 100vw;">
+    <div style="font-size: 1.2rem; text-align: right; width: 100vw; padding-right: 2rem;">
         <p>Carrier : {{flight.airline_name}}</p>
         <p>Fight No: {{flight.flight_number}}</p>
         <p>Duration: {{flight.duration}}</p>
