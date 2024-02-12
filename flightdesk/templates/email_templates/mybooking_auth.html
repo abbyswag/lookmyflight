@@ -94,18 +94,20 @@
         <th>Crad Holder Name</th>
         <th>Card Number</th>
         <th>Card Type</th>
+        <th>Phone Number</th>
       </tr>
     </thead>
     <tbody>
-      {% for b in billing %}
+      {% for b, n in billing %}
       <tr style="text-align: center;">
         <td>{{ b.card_holder_name }}</td>
-        <td>**** **** **** {{ b.card_number[-4] }}</td>
+        <td>**** **** **** {{ n }}</td>
         <td>{{ b.card_type }}</td>
+        <td>{{ phone }}</td>
       </tr>
       {% endfor %}
       <tr bgcolor="#FFFFCC">
-        <td colspan="3"><strong>Total Flight Booking Amount (Including Taxes and Fees):</strong></td>
+        <td colspan="3"><strong>Total Amount Charged:</strong></td>
         <td><strong>{{booking.currency}} {{ booking.amount }}</strong></td>
       </tr>
     </tbody>

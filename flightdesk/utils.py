@@ -28,16 +28,19 @@ def save_email(subject, recipient, message, added_by, status= 'sent'):
 
 def create_auth_draft(booking):
     try:
+        print('demo')
         template = 'email_templates/mybooking_auth.html'
         approval_url = reverse('approve-booking', args=[booking.booking_id])
         passengers = booking.passenger_set.all()
         billing = booking.billinginformation_set.all()
         card_number = billing[0].card_number[-4:]
+        numbers = [b.card_number[-4:] for b in billing ]
         card_holder_name = billing[0].card_holder_name
         flights = booking.flightdetails_set.all()
         airline_cost = sum([f.airline_cost for f in flights])
         tax_fee = booking.amount - airline_cost
         adult_count = len(passengers)
+        phone = booking.call_logs.first().phone
         message = render_to_string(template, {'booking': booking, 
                                                 'approval_url': os.getenv('HOST_URL') + approval_url, 
                                                 'passengers': passengers, 
@@ -45,7 +48,9 @@ def create_auth_draft(booking):
                                                 'airline_cost': airline_cost,
                                                 'adult_count': adult_count, 
                                                 'flights': flights,
+                                                'billing': zip(billing, numbers),
                                                 'card_number': card_number,
+                                                'phone': phone,
                                                 'card_holder_name': card_holder_name})
     except:
         return None

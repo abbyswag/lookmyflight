@@ -147,6 +147,7 @@ class NewBookingAdmin(BookingAdmin):
                 subject = f"Booking Authorization Started: {booking.booking_id}" 
                 recipient = booking.call_logs.first().email
                 message = create_auth_draft(booking)
+                print(message)
                 if message is not None:
                     print(booking)
                     if status: 
