@@ -136,7 +136,7 @@ JAZZMIN_SETTINGS = {
         "flightdesk.calllog": "fas fa-phone",
         "flightdesk.email": "fas fa-envelope",
         "flightdesk.newbooking": "fas fa-book",
-        "flightdesk.refund": "fas fa-receipt",
-        "flightdesk.futurecredit": "fas fa-thumbtack",
+        "flightdesk.cancellation": "fas fa-receipt",
+        "flightdesk.addition": "fas fa-thumbtack",
     },
 }
