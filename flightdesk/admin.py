@@ -122,6 +122,14 @@ class BookingAdmin(admin.ModelAdmin):
 
 
 class NewBookingAdmin(BookingAdmin):
+    fieldsets = (
+        ('General', {
+            'fields': ('currency', 'status', 'amount', 'agent_remarks')
+        }),
+        ('ticket/pass', {
+            'fields': ('e_ticket', 'boarding_pass')
+        })
+    )
     actions = ['draft_approval_email' ,'send_approval_email', 'send_ticket', 'send_boarding_pass']
 
     def draft_approval_email(self, request, queryset):
