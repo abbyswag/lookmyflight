@@ -29,7 +29,7 @@ def save_email(subject, recipient, message, added_by, status= 'sent'):
 def create_auth_draft(booking):
     try:
         template = 'email_templates/mybooking_auth.html'
-        approval_url = reverse('approve-booking', args=[booking.mybooking_id])
+        approval_url = reverse('approve-booking', args=[booking.booking_id])
         passengers = booking.passenger_set.all()
         billing = booking.billinginformation_set.all()
         card_number = billing[0].card_number[-4:]

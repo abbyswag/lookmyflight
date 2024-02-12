@@ -72,13 +72,13 @@
     <tbody>
       <tr style="text-align: center;">
         <td>{{ adult_count }} Adult/s</td>
-        <td>$ {{ airline_cost }}</td>
-        <td>$ {{ tax_fee }}</td>
-        <td>$ {{ booking.amount }}</td>
+        <td>{{ airline_cost }}</td>
+        <td>{{ tax_fee }}</td>
+        <td>{{ booking.amount }}</td>
       </tr>
       <tr bgcolor="#FFFFCC">
         <td colspan="3"><strong>Total Flight Booking Amount:</strong></td>
-        <td><strong>USD$ {{ booking.amount }}</strong></td>
+        <td><strong>{{booking.currency}} {{ booking.amount }}</strong></td>
       </tr>
     </tbody>
   </table>

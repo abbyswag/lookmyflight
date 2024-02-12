@@ -16,11 +16,11 @@ from .validators import CardExpiryValidator
 # utils functions/scripts
 def generate_mybooking_id():
     today = datetime.datetime.now().strftime('%y%m%d')
-    existing_mybookings = MyBooking.objects.filter(mybooking_id__startswith=f'LM{today}')
+    existing_mybookings = Booking.objects.filter(booking_id__startswith=f'LM{today}')
     
     if existing_mybookings.exists():
-        last_mybooking = existing_mybookings.order_by('-mybooking_id').first()
-        last_number = int(last_mybooking.mybooking_id[-3:])
+        last_mybooking = existing_mybookings.order_by('-booking_id').first()
+        last_number = int(last_mybooking.booking_id[-3:])
         new_number = last_number + 1
     else:
         new_number = 1
@@ -36,6 +36,7 @@ class CallLog(models.Model):
     CATEGORY_CHOICES = (
         ('New Booking', 'New Booking'),
         ('Cancelation', 'Cancelation'),
+        ('Addition', 'Addition'),
         ('Other', 'Other'),
     )
 
@@ -49,14 +50,16 @@ class CallLog(models.Model):
     phone = models.CharField(max_length=20)
     email = models.EmailField(blank=True)
     call_date = models.DateTimeField(auto_now_add=True)
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default= 'MyBooking')
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default= 'Booking')
     remark = models.TextField(blank=True)
 
     def save(self, *args, **kwargs):
         if self.category == 'New Booking':
-            related_object = MyBooking.objects.create(added_by=self.added_by)
+            related_object = NewBooking.objects.create(added_by=self.added_by)
         elif self.category == 'Cancelation':
-            related_object = Refund.objects.create()
+            related_object = Cancellation.objects.create(added_by=self.added_by)
+        elif self.category == 'Addition':
+            related_object = Addition.objects.create(added_by=self.added_by)
         else:
             related_object = None
 
@@ -79,7 +82,7 @@ class BillingInformation(models.Model):
         ('AmericanExpress', 'American Express'),
     )
 
-    mybooking= models.ForeignKey('MyBooking', on_delete=models.CASCADE)
+    booking= models.ForeignKey('Booking', on_delete=models.CASCADE)
     card_type = models.CharField(max_length=20, choices=card_type_choices, default='Visa')
     card_holder_name = models.CharField(max_length=255)
     card_number = models.CharField(
@@ -105,7 +108,7 @@ class Passenger(models.Model):
         ('F', 'Female'),
         ('O', 'Other'),
     )
-    mybooking= models.ForeignKey('MyBooking', on_delete=models.CASCADE)
+    booking= models.ForeignKey('Booking', on_delete=models.CASCADE)
     full_passenger_name = models.CharField(max_length=255)
     date_of_birth = models.DateField()
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
@@ -120,8 +123,7 @@ class FlightDetails(models.Model):
         ('CAD', 'CAD'),
     )
         
-    mybooking = models.ForeignKey('MyBooking', on_delete=models.CASCADE)
-
+    booking = models.ForeignKey('Booking', on_delete=models.CASCADE)
     airline_name = models.CharField(max_length=255)
     airline_cost = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default= 'USD')
@@ -145,10 +147,10 @@ class FlightDetails(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f'FlightDetails for MyBooking ID: {self.mybooking.mybooking_id}'
+        return f'FlightDetails for Booking ID: {self.booking.booking_id}'
 
-# MyBooking model
-class MyBooking(models.Model):
+# Booking model
+class Booking(models.Model):
 
     CURRENCY_CHOICES = (
         ('USD', 'USD'),
@@ -162,43 +164,73 @@ class MyBooking(models.Model):
         ('confirmed', 'Confirmed'), 
         ('cleared', 'Cleared'), 
     )
-    PAYMENT_CHOICES = (
-        {'waiting', 'Waiting'},
-        {'cleared', 'Cleared'},
-        {'failed', 'Failed'},
-    )
 
     # relations
     call_logs = GenericRelation(CallLog, related_query_name='mybooking_call_logs')
     added_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, default= None, null= True)
     
     # booking information
-    mybooking_id = models.CharField(max_length=8, unique=True, default=generate_mybooking_id)
+    booking_id = models.CharField(max_length=8, unique=True, default=generate_mybooking_id)
     currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default= 'USD')
     amount = models.DecimalField(max_digits=10, decimal_places=2, default = 0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='initiated')
-    mco = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default='waiting')
     agent_remarks = models.TextField(default=str, blank= True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+
+class NewBooking(Booking):
     e_ticket = models.ImageField(upload_to='e_tickets', blank=True)
     boarding_pass = models.ImageField(upload_to='boarding_passes', blank=True)
 
     def __str__(self):
         customer_name = self.call_logs.first().customer_name if self.call_logs.exists() else "N/A"
-        return f'MyBooking ID: {self.mybooking_id} - Customer Name: {customer_name}'
+        return f'New Booking of {self.booking_id} - Customer Name: {customer_name}'
 
+class Cancellation(Booking):
+    REASON_CHOICES = (
+        ('Schedule change', 'Schedule change'),
+        ('Personal reason', 'Personal reason'),
+        ('Price too high', 'Price too high'),
+        ('Other', 'Other'),
+    )
 
-@receiver(post_save, sender=MyBooking)
+    reason = models.CharField(max_length=100, choices=REASON_CHOICES)
+    pnr = models.CharField(max_length=20, unique=True)
+
+    def __str__(self):
+        customer_name = self.call_logs.first().customer_name if self.call_logs.exists() else "N/A"
+        return f'Cancellation of {self.booking_id} - {customer_name}'
+
+class AddInline(models.Model):
+
+    weight = models.DecimalField(decimal_places = 2, max_digits = 5, default = 0)
+    pet_type = models.CharField(max_length = 10, default = 'None')
+    no_of_meals = models.CharField(max_length = 1, default = 0)
+
+class Addition(Booking):
+    CHOICES = (
+        ('Baggage', 'Baggage'),
+        ('Meal', 'Meal'),
+        ('Pet', 'Pet'),
+    )
+    
+    category = models.CharField(max_length=100, choices=CHOICES)
+    pnr = models.CharField(max_length=20, unique=True)
+
+    def __str__(self):
+        customer_name = self.call_logs.first().customer_name if self.call_logs.exists() else "N/A"
+        return f'Addition of {self.booking_id} - {customer_name}'
+
+@receiver(post_save, sender=Booking)
 def create_notification(sender, instance, created, **kwargs):
     if not created and instance.status == 'allocating':
         template = 'email_templates/mybooking_notification.html'
         url = reverse('admin:flightdesk_mybooking_change', args=[instance.pk])
         supervisors = User.objects.filter(groups__name='supervisor')
         recipients = [user.email for user in supervisors]
-        message = render_to_string(template, {'mybooking_id': instance.mybooking_id, 'url': os.getenv('HOST_URL') + url})
+        message = render_to_string(template, {'booking_id': instance.booking_id, 'url': os.getenv('HOST_URL') + url})
         send_mail(
-            'Payment for boooking {}'.format(instance.mybooking_id),
+            'Payment for boooking {}'.format(instance.booking_id),
             "client doesn't support html emails",
             settings.EMAIL_HOST_USER,
             recipients,  
@@ -206,61 +238,6 @@ def create_notification(sender, instance, created, **kwargs):
             html_message= message,
         )
         
-
-# Refund Model
-class Refund(models.Model):
-    CURRENCY_CHOICES = (
-        ('USD', 'USD'),
-        ('GBP', 'GBP'),
-        ('CAD', 'CAD'),
-    )
-    STATUS_CHOICES = (
-        ('requested', 'Requested'),
-        ('processing', 'Processing'),
-        ('completed', 'Completed'),
-        ('canceled', 'Canceled'),
-    )
-
-    call_logs = GenericRelation(CallLog, related_query_name='refund_call_logs')
-
-    # refund information
-    refund_id = models.CharField(max_length=8, unique=True, default=generate_mybooking_id)
-    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='USD')
-    amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, default= '0', blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='requested')
-    reason = models.TextField(default="", blank=True)
-    processed_at = models.DateTimeField(null=True, blank=True)
-
-    def __str__(self):
-        return f'Refund ID: {self.refund_id} - Amount: {self.amount} {self.currency}'
-
-# FutureCredit Model
-class FutureCredit(models.Model):
-    CURRENCY_CHOICES = (
-        ('USD', 'USD'),
-        ('GBP', 'GBP'),
-        ('CAD', 'CAD'),
-    )
-    STATUS_CHOICES = (
-        ('requested', 'Requested'),
-        ('processing', 'Processing'),
-        ('completed', 'Completed'),
-        ('canceled', 'Canceled'),
-    )
-
-    call_logs = GenericRelation(CallLog, related_query_name='future_credit_call_logs')
-
-    # future credit information
-    future_credit_id = models.CharField(max_length=8, unique=True, default=generate_mybooking_id)
-    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='USD')
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='requested')
-    reason = models.TextField(default="", blank=True)
-    processed_at = models.DateTimeField(null=True, blank=True)
-
-    def __str__(self):
-        return f'Future Credit ID: {self.future_credit_id} - Amount: {self.amount} {self.currency}'
-
 
 class EmailAttachtment(models.Model):
     email= models.ForeignKey('Email', on_delete=models.CASCADE)

@@ -135,7 +135,7 @@ JAZZMIN_SETTINGS = {
         "auth.Group": "fas fa-users",
         "flightdesk.calllog": "fas fa-phone",
         "flightdesk.email": "fas fa-envelope",
-        "flightdesk.mybooking": "fas fa-book",
+        "flightdesk.newbooking": "fas fa-book",
         "flightdesk.refund": "fas fa-receipt",
         "flightdesk.futurecredit": "fas fa-thumbtack",
     },

@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.db.models import Q
 import os
 from .utils import send_email, save_email, create_auth_draft
-from .models import Passenger, BillingInformation, CallLog, MyBooking, Email, Refund, FutureCredit, FlightDetails, EmailAttachtment
+from .models import Passenger, BillingInformation, CallLog, NewBooking, Email, Addition, Cancellation, FlightDetails, EmailAttachtment, AddInline
 
 class CustomerNameRegexFilter(admin.SimpleListFilter):
   title = 'customer name'
@@ -89,14 +89,13 @@ class FlightDetailsInline(admin.StackedInline):
 
 
 class BookingAdmin(admin.ModelAdmin):
-    list_display = ('mybooking_id', 'customer_name', 'amount', 'status')
+    list_display = ('booking_id', 'customer_name', 'amount', 'status')
     exclude = ('added_by', )
-    actions = ['draft_approval_email' ,'send_approval_email', 'send_ticket', 'send_boarding_pass']
     inlines = [BillingInformationInline, PassengerInline, FlightDetailsInline]
     list_filter = (BookingStatusFilter, 'created_at',)
     fieldsets = (
         ('General', {
-            'fields': ('currency', 'amount', 'mco', 'agent_remarks')
+            'fields': ('currency', 'amount', 'agent_remarks')
         }),
         ('ticket/pass', {
             'fields': ('e_ticket', 'boarding_pass')
@@ -121,6 +120,10 @@ class BookingAdmin(admin.ModelAdmin):
         obj.added_by = request.user
         super().save_model(request, obj, form, change)
 
+
+class NewBookingAdmin(BookingAdmin):
+    actions = ['draft_approval_email' ,'send_approval_email', 'send_ticket', 'send_boarding_pass']
+
     def draft_approval_email(self, request, queryset):
         self.send_approval_email(request, queryset, False)
         # self.message_user(request, f'{queryset.count()} booking(s) authorization mail draft created.')
@@ -133,10 +136,11 @@ class BookingAdmin(admin.ModelAdmin):
                 flag = True
                 self.message_user(request, f'{queryset.count()} booking(s) approval email already sended (No need to send multiple time).')
             else:
-                subject = f"Booking Authorization Started: {booking.mybooking_id}" 
+                subject = f"Booking Authorization Started: {booking.booking_id}" 
                 recipient = booking.call_logs.first().email
                 message = create_auth_draft(booking)
                 if message is not None:
+                    print(booking)
                     if status: 
                         send_email(subject, recipient, message)
                         save_email(subject, recipient, message, booking.added_by)
@@ -151,11 +155,12 @@ class BookingAdmin(admin.ModelAdmin):
             self.message_user(request, f'{queryset.count()} booking(s) authorization mail sended successfully.')
     send_approval_email.short_description = "send approval email"
     
+
     def send_ticket(self, request, queryset):
         flag = False
         for booking in queryset:
             if booking.status == 'allocating':
-                subject = f"Booking Confirmed: {booking.mybooking_id}"
+                subject = f"Booking Confirmed: {booking.booking_id}"
                 recipient=booking.call_logs.first().email
                 if booking.e_ticket: ticket_url = booking.e_ticket.url
                 else: 
@@ -179,7 +184,7 @@ class BookingAdmin(admin.ModelAdmin):
         flag = False
         for booking in queryset:
             if booking.status == 'confirmed':
-                subject = f"Booking Cleared: {booking.mybooking_id}"
+                subject = f"Booking Cleared: {booking.booking_id}"
                 recipient=booking.call_logs.first().email
                 if booking.boarding_pass: pass_url = booking.boarding_pass.url
                 else: 
@@ -198,6 +203,26 @@ class BookingAdmin(admin.ModelAdmin):
         if not flag:
             self.message_user(request, f'{queryset.count()} booking(s) boarding pass email sended successfully.')
     send_boarding_pass.short_description = 'sent boarding pass email'
+    
+class CancellationAdmin(BookingAdmin):
+    fieldsets = (
+        ('General', {
+            'fields': ('currency', 'amount', 'reason', 'agent_remarks')
+        }),
+    )
+
+class AddInlineInline(admin.StackedInline):
+    model= Addition
+    verbose_name_plural = 'Addition'
+    extra = 1
+
+class AdditionAdmin(BookingAdmin):
+    inlines = BookingAdmin.inlines + [AddInlineInline]
+    fieldsets = (
+        ('General', {
+            'fields': ('currency', 'amount', 'category', 'agent_remarks')
+        }),
+    )
 
 class EmailAttachtmentInline(admin.StackedInline):
     model = EmailAttachtment
@@ -253,24 +278,8 @@ class EmailAdmin(admin.ModelAdmin):
     send_selected_emails.short_description = 'Send selected emails'
 
 
-class RefundAdmin(admin.ModelAdmin):
-    list_display = ('refund_id', 'currency', 'amount', 'status', 'reason', 'processed_at')
-    search_fields = ('refund_id', 'reason')
-    list_filter = ('status', 'processed_at')
-    date_hierarchy = 'processed_at'
-    readonly_fields = ('processed_at',)  
-
-
-class FutureCreditAdmin(admin.ModelAdmin):
-    list_display = ('future_credit_id', 'currency', 'amount', 'status', 'reason', 'processed_at')
-    search_fields = ('future_credit_id', 'reason')
-    list_filter = ('status', 'processed_at')
-    date_hierarchy = 'processed_at'
-    readonly_fields = ('processed_at',)
-
-
-admin.site.register(FutureCredit, FutureCreditAdmin)
+admin.site.register(Cancellation, CancellationAdmin)
 admin.site.register(Email, EmailAdmin)
 admin.site.register(CallLog, CallLogAdmin)
-admin.site.register(MyBooking, BookingAdmin)
-admin.site.register(Refund, RefundAdmin)
+admin.site.register(NewBooking, NewBookingAdmin)
+admin.site.register(Addition, AdditionAdmin)
