@@ -106,11 +106,11 @@ class BookingAdmin(admin.ModelAdmin):
             self.list_filter = (BookingStatusFilter, 'created_at', 'added_by',)
         return super().get_list_filter(request)
 
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        if request.user.groups.filter(name='agent').exists():
-            return qs.filter(added_by=request.user)
-        return qs
+    # def get_queryset(self, request):
+    #     qs = super().get_queryset(request)
+    #     if request.user.groups.filter(name='agent').exists():
+    #         return qs.filter(added_by=request.user)
+    #     return qs
     
     def customer_name(self, obj):
         return obj.call_logs.filter(id__isnull=False).first().customer_name if obj.call_logs.exists() else "N/A"
@@ -261,12 +261,12 @@ class EmailAdmin(admin.ModelAdmin):
             self.list_filter = ('added_by',)
         return super().get_list_filter(request)
 
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
+    # def get_queryset(self, request):
+    #     qs = super().get_queryset(request)
         
-        if request.user.groups.filter(name='agent').exists():
-            return qs.filter(added_by=request.user)
-        return qs
+    #     if request.user.groups.filter(name='agent').exists():
+    #         return qs.filter(added_by=request.user)
+    #     return qs
     
     def send_selected_emails(modeladmin, request, queryset):
         for email in queryset:
