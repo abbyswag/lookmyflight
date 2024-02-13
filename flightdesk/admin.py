@@ -44,12 +44,11 @@ class CallLogAdmin(admin.ModelAdmin):
             self.list_filter = ('added_by','call_date', 'category', CustomerNameRegexFilter, )
         return super().get_list_filter(request)
 
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        
-        if request.user.groups.filter(name='agent').exists():
-            return qs.filter(added_by=request.user)
-        return qs
+    # def get_queryset(self, request):
+    #     qs = super().get_queryset(request)
+    #     if request.user.groups.filter(name='agent').exists():
+    #         return qs.filter(added_by=request.user)
+    #     return qs
 
 
 class BookingStatusFilter(admin.SimpleListFilter):
