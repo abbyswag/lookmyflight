@@ -225,7 +225,7 @@ class Addition(Booking):
 def create_notification(sender, instance, created, **kwargs):
     if not created and instance.status == 'allocating':
         template = 'email_templates/mybooking_notification.html'
-        url = reverse('admin:flightdesk_booking_change', args=[instance.pk])
+        url = reverse('admin:flightdesk_newbooking_change', args=[instance.pk])
         supervisors = User.objects.filter(groups__name='supervisor')
         recipients = [user.email for user in supervisors]
         message = render_to_string(template, {'booking_id': instance.booking_id, 'url': os.getenv('HOST_URL') + url})
