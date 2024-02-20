@@ -9,5 +9,5 @@ def approve_booking(request, booking_id):
   booking.save()
   messages.success(request, 'Booking approved.')
   return render(request, 'approved.html', {
-    'booking_id': booking_id
+    'mybooking_id': booking_id
   })
