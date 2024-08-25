@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CRM Dashboard{% endblock %}</title>
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+</head>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+
+    <!-- Header -->
+    <header class="bg-blue-600 p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center">
+                <!-- Menu Toggle -->
+                <button id="menu-toggle" class="text-white mr-4 focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                    </svg>
+                </button>
+                <!-- Company Name -->
+                <a href="{% url 'dashboard' %}" class="text-white text-lg font-semibold">LTE</a>
+            </div>
+            <div class="flex items-center">
+                <!-- User Profile/Logout -->
+                <div class="relative">
+                    <button class="text-white flex items-center focus:outline-none">
+                        <span class="mr-2">{{ user.username }}</span>
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A10.971 10.971 0 0112 15.5c2.21 0 4.302.642 6.121 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </button>
+                    <!-- Dropdown menu -->
+                    <div id="profile-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20">
+                        <a href="{% url 'dashboard' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Profile</a>
+                        <a href="{% url 'logout' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex">
+
+        <!-- Right Sidebar (Navigation) -->
+        <aside class="bg-white w-64 h-screen shadow-lg">
+            <nav class="mt-10">
+                <a href="{% url 'dashboard' %}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-200 hover:text-blue-600">
+                    Dashboard
+                </a>
+                <a href="{% url 'call_log_list' %}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-200 hover:text-blue-600">
+                    Call Logs
+                </a>
+                {% if is_supervisor %}
+                <a href="{% url 'campaign_list' %}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-200 hover:text-blue-600">
+                    Campaigns
+                </a>
+                {% endif %}
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-8">
+            {% block content %}
+            <!-- Page-specific content will go here -->
+            {% endblock %}
+        </main>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 p-4">
+        <div class="container mx-auto text-center text-white">
+            <p>&copy; 2024 DualNature. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript for Toggle and Dropdown -->
+    <script>
+        // Menu Toggle
+        document.getElementById('menu-toggle').addEventListener('click', function () {
+            document.querySelector('aside').classList.toggle('hidden');
+        });
+
+        // Profile Dropdown Toggle
+        document.querySelector('.relative > button').addEventListener('click', function () {
+            document.getElementById('profile-dropdown').classList.toggle('hidden');
+        });
+    </script>
+        <!-- Scripts Block -->
+        {% block scripts %}
+        <!-- Default scripts can be added here -->
+        {% endblock %}
+
+</body>
+</html>

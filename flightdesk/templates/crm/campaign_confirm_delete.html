@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Campaign{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow-lg">
+    <h2 class="text-2xl font-bold text-red-600">Delete Campaign</h2>
+    <p class="text-gray-800 mt-4">Are you sure you want to delete the campaign with code <strong>{{ campaign.code }}</strong>?</p>
+
+    <form method="POST" class="mt-6">
+        {% csrf_token %}
+        <button type="submit" class="bg-red-600 text-white font-bold py-2 px-4 rounded hover:bg-red-700">Delete</button>
+        <a href="{% url 'campaign_list' %}" class="bg-gray-600 text-white font-bold py-2 px-4 rounded hover:bg-gray-700">Cancel</a>
+    </form>
+</div>
+{% endblock %}

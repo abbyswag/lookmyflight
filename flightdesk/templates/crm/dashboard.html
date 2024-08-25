@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Welcome Card -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h2 class="text-2xl font-bold text-gray-800">Welcome, {{ user.username }}!</h2>
+        <p class="text-gray-600 mt-2">Here is your dashboard overview.</p>
+    </div>
+
+    <!-- Call Logs Overview Card -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h3 class="text-xl font-semibold text-gray-800">Call Logs</h3>
+        <p class="text-gray-600 mt-2">You have <span class="font-bold">{{ call_logs_count }}</span> call logs recorded.</p>
+        <a href="{% url 'call_log_list' %}" class="text-blue-600 hover:underline mt-4 inline-block">View Call Logs</a>
+    </div>
+
+    {% if is_supervisor %}
+    <!-- Campaigns Overview Card (For Supervisors) -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h3 class="text-xl font-semibold text-gray-800">Campaigns</h3>
+        <p class="text-gray-600 mt-2">Manage your campaigns effectively.</p>
+        <a href="{% url 'campaign_list' %}" class="text-blue-600 hover:underline mt-4 inline-block">View Campaigns</a>
+    </div>
+    {% endif %}
+
+    {% if is_supervisor %}
+    <div class="bg-white p-6 rounded-lg shadow-lg mb-6 col-span-1 md:col-span-2">
+        <h3 class="text-xl font-semibold text-gray-800">Call Log Summary</h3>
+
+        <div class="flex justify-end space-x-4 mt-4">
+            <a href="?filter=total" class="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 {% if filter_type == 'total' %}bg-blue-800{% endif %}">Total</a>
+            <a href="?filter=tags" class="bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700 {% if filter_type == 'tags' %}bg-green-800{% endif %}">By Tags</a>
+            <a href="?filter=conversion" class="bg-purple-600 text-white font-bold py-2 px-4 rounded hover:bg-purple-700 {% if filter_type == 'conversion' %}bg-purple-800{% endif %}">By Conversion</a>
+        </div>
+
+        <canvas id="callLogChart" class="mt-6"></canvas>
+    </div>
+    {% endif %}
+
+</div>
+
+<div class="mt-8">
+    <h2 class="text-2xl font-bold text-gray-800">Recent Activity</h2>
+    <div class="mt-4 bg-white p-6 rounded-lg shadow-lg">
+        {% if recent_activities %}
+            <ul class="space-y-4">
+                {% for activity in recent_activities %}
+                <li class="border-b pb-2">
+                    <p class="text-gray-700"><strong>{{ activity.title }}</strong></p>
+                    <p class="text-gray-600 text-sm">{{ activity.description }}</p>
+                    <p class="text-gray-500 text-xs">{{ activity.timestamp }}</p>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-gray-600">No recent activities found.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const labels = {{ labels|safe }};
+    const data = {{ data|safe }};
+
+    const ctx = document.getElementById('callLogChart').getContext('2d');
+    const callLogChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Number of Calls',
+                data: data,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

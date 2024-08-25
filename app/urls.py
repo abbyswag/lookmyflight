@@ -21,9 +21,10 @@ from django.conf.urls.static import static
 # from django.utils.translation import ugettext as ugettext_lazy
 
 urlpatterns = [
+    path('', include('admin_volt.urls')),
+    path('', include('flightdesk.urls')),
     path('admin/', admin.site.urls),
     path('admin_tools_stats/', include('admin_tools_stats.urls')),
-    path('/', include('flightdesk.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 admin.AdminSite.site_header = "LET Administration"

@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}Call Logs{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">Call Logs</h2>
+    <a href="{% url 'call_log_add' %}" class="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700">Add New Call Log</a>
+</div>
+
+<!-- {% if is_supervisor %} -->
+<div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+    <h3 class="text-lg font-bold mb-4">Filter</h3>
+    <form method="GET" action="{% url 'call_log_list' %}" class="space-y-4">
+        <div class="flex space-x-4">
+            <div class="flex-1">
+                <label for="date" class="block text-gray-700 text-sm font-bold mb-2">Date</label>
+                <input type="date" id="date" name="date" value="{{ selected_date }}" class="w-full px-3 py-2 border rounded-lg">
+            </div>
+            <div class="flex-1">
+                <label for="tag" class="block text-gray-700 text-sm font-bold mb-2">Tag</label>
+                <select id="tag" name="tag" class="w-full px-3 py-2 border rounded-lg">
+                    <option value="">-- All Tags --</option>
+                    {% for tag in tags %}
+                    <option value="{{ tag.code }}" {% if tag.code == selected_tag %}selected{% endif %}>{{ tag.code }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex-1">
+                <label for="conversion" class="block text-gray-700 text-sm font-bold mb-2">Conversion</label>
+                <select id="conversion" name="conversion" class="w-full px-3 py-2 border rounded-lg">
+                    <option value="">-- All Conversions --</option>
+                    <option value="Yes" {% if selected_conversion == 'Yes' %}selected{% endif %}>Yes</option>
+                    <option value="No" {% if selected_conversion == 'No' %}selected{% endif %}>No</option>
+                </select>
+            </div>
+            {% if is_supervisor %}
+            <div class="flex-1">
+                <label for="added_by" class="block text-gray-700 text-sm font-bold mb-2">Added By</label>
+                <select id="added_by" name="added_by" class="w-full px-3 py-2 border rounded-lg">
+                    <option value="">-- All Users --</option>
+                    {% for user in users %}
+                    <option value="{{ user.username }}" {% if user.username == selected_added_by %}selected{% endif %}>{{ user.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+        </div>
+        <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700">Apply Filters</button>
+    </form>
+</div>
+<!-- {% endif %} -->
+
+<div class="bg-white p-6 rounded-lg shadow-lg">
+    {% if call_logs %}
+        <table class="min-w-full bg-white">
+            <thead>
+                <tr>
+                    <th class="py-2 px-4 bg-gray-100 text-left">Name</th>
+                    <th class="py-2 px-4 bg-gray-100 text-left">Phone</th>
+                    <th class="py-2 px-4 bg-gray-100 text-left">Email</th>
+                    <th class="py-2 px-4 bg-gray-100 text-left">Call Date</th>
+                    <th class="py-2 px-4 bg-gray-100 text-left">Tag</th>
+                    <th class="py-2 px-4 bg-gray-100 text-left">Converted</th>
+                    <th class="py-2 px-4 bg-gray-100 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for call_log in call_logs %}
+                <tr class="border-b">
+                    <td class="py-2 px-4">{{ call_log.name }}</td>
+                    <td class="py-2 px-4">{{ call_log.phone }}</td>
+                    <td class="py-2 px-4">{{ call_log.email }}</td>
+                    <td class="py-2 px-4">{{ call_log.call_date }}</td>
+                    <td class="py-2 px-4">{{ call_log.tag.code }}</td>
+                    <td class="py-2 px-4">{{ call_log.converted }}</td>
+                    <td class="py-2 px-4 text-right">
+                        <a href="{% url 'call_log_detail' call_log.id %}" class="text-blue-600 hover:underline">View</a> |
+                        <a href="{% url 'call_log_edit' call_log.id %}" class="text-yellow-600 hover:underline">Edit</a> |
+                        <a href="{% url 'call_log_delete' call_log.id %}" class="text-red-600 hover:underline">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="text-gray-600">No call logs found.</p>
+    {% endif %}
+</div>
+{% endblock %}

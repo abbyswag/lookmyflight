@@ -7,14 +7,14 @@ from django.urls import reverse
 from django.db.models import Q
 import os
 from .utils import send_email, save_email, create_auth_draft
-from .models import Passenger, BillingInformation, CallLog, NewBooking, Email, Addition, Cancellation, FlightDetails, EmailAttachtment, AddInline
+from .models import Passenger, BillingInformation, CallLog, NewBooking, Email, Addition, Cancellation, FlightDetails, EmailAttachtment, Campaign
 
 class CustomerNameRegexFilter(admin.SimpleListFilter):
-  title = 'customer name'
-  parameter_name = 'customer_name'
+  title = 'name'
+  parameter_name = 'name'
 
   def lookups(self, request, model_admin):    
-    customer_names = CallLog.objects.values_list('customer_name', flat=True).distinct()
+    customer_names = CallLog.objects.values_list('name', flat=True).distinct()
     customer_lookups = [(name, name) for name in customer_names]
 
     return customer_lookups
@@ -22,18 +22,23 @@ class CustomerNameRegexFilter(admin.SimpleListFilter):
   def queryset(self, request, queryset):
     if self.value():
         regex = r'(?i).*%s$' % self.pattern
-        return queryset.filter(Q(customer_name__iregex=regex))
+        return queryset.filter(Q(name__iregex=regex))
       
     return queryset
 
   @property
   def pattern(self):
-    return self.used_parameters.get('customer_name')
+    return self.used_parameters.get('name')
 
 class CallLogAdmin(admin.ModelAdmin):
-    list_display = ('customer_name', 'call_date', 'category')
-    exclude = ('added_by', 'object_id', 'content_type')
-    list_filter = ('call_date', 'category', CustomerNameRegexFilter, )
+    list_display = ('name', 'phone', 'tag', 'converted',)
+    exclude = ('added_by',)
+    fieldsets = (
+        ('Customer', {
+            'fields': ('name', 'phone', 'email', 'tag', 'converted', 'concern')
+        }),
+    )
+    # list_filter = ('call_date', 'tag', 'converted', CustomerNameRegexFilter, )
 
     def save_model(self, request, obj, form, change):
         obj.added_by = request.user
@@ -41,7 +46,9 @@ class CallLogAdmin(admin.ModelAdmin):
 
     def get_list_filter(self, request):
         if request.user.groups.filter(name='supervisor').exists():
-            self.list_filter = ('added_by','call_date', 'category', CustomerNameRegexFilter, )
+            self.list_filter = ('added_by','call_date', 'tag', CustomerNameRegexFilter, )
+        else:
+            self.list_filter = ('call_date', 'tag', CustomerNameRegexFilter, )
         return super().get_list_filter(request)
 
     # def get_queryset(self, request):
@@ -163,7 +170,6 @@ class NewBookingAdmin(BookingAdmin):
             self.message_user(request, f'{queryset.count()} booking(s) authorization mail sended successfully.')
     send_approval_email.short_description = "send approval email"
     
-
     def send_ticket(self, request, queryset):
         flag = False
         for booking in queryset:
@@ -285,7 +291,10 @@ class EmailAdmin(admin.ModelAdmin):
     preview.short_description = ''
     send_selected_emails.short_description = 'Send selected emails'
 
+class CampaignAdmin(admin.ModelAdmin):
+    list_display = ('code',)
 
+admin.site.register(Campaign, CampaignAdmin)
 admin.site.register(Cancellation, CancellationAdmin)
 admin.site.register(Email, EmailAdmin)
 admin.site.register(CallLog, CallLogAdmin)

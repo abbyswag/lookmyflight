@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Campaigns{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">Campaigns</h2>
+    <a href="{% url 'campaign_add' %}" class="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700">Add New Campaign</a>
+</div>
+
+<div class="bg-white p-6 rounded-lg shadow-lg">
+    {% if campaigns %}
+        <table class="min-w-full bg-white">
+            <thead>
+                <tr>
+                    <th class="py-2 px-4 bg-gray-100 text-left">Code</th>
+                    <th class="py-2 px-4 bg-gray-100 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for campaign in campaigns %}
+                <tr class="border-b">
+                    <td class="py-2 px-4">{{ campaign.code }}</td>
+                    <td class="py-2 px-4 text-right">
+                        <a href="{% url 'campaign_detail' campaign.id %}" class="text-blue-600 hover:underline">View</a> |
+                        <a href="{% url 'campaign_edit' campaign.id %}" class="text-yellow-600 hover:underline">Edit</a> |
+                        <a href="{% url 'campaign_delete' campaign.id %}" class="text-red-600 hover:underline">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="text-gray-600">No campaigns found.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -31,47 +31,54 @@ file_path = os.path.join(settings.BASE_DIR,'flightdesk/airport_data')
 with open(file_path, 'rb') as file:
     airport_dict = pickle.load(file)
 
+class Campaign(models.Model):
+    code = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return self.code
+
 # Calllog Model
 class CallLog(models.Model):
-    CATEGORY_CHOICES = (
-        ('New Booking', 'New Booking'),
-        ('Cancelation', 'Cancelation'),
-        ('Addition', 'Addition'),
+    TAG_CHOICES = (
+        ('LMF', 'LMF'),
+        ('877', '877'),
+        ('TOH', 'TOH'),
         ('Other', 'Other'),
+    )
+
+    CONVERT_CHOICES = (
+        ('Yes', 'Yes'),
+        ('No', 'No'),
     )
 
     id = models.AutoField(primary_key=True)
     added_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, default= None, null= True) 
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=True, blank=True)
-    object_id = models.PositiveIntegerField(null=True, blank=True)
-    content_object = GenericForeignKey('content_type', 'object_id')
-
-    customer_name = models.CharField(max_length=100)
+    converted = models.CharField(max_length=5, choices=CONVERT_CHOICES, default='Yes')
+    name = models.CharField(max_length=100)
     phone = models.CharField(max_length=20)
     email = models.EmailField(blank=True)
     call_date = models.DateTimeField(auto_now_add=True)
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default= 'Booking')
-    remark = models.TextField(blank=True)
+    tag = models.ForeignKey(Campaign, on_delete=models.SET_NULL, null=True, blank=True)
+    concern = models.TextField(blank=True)
 
-    def save(self, *args, **kwargs):
-        if self.category == 'New Booking':
-            related_object = NewBooking.objects.create(added_by=self.added_by)
-        elif self.category == 'Cancelation':
-            related_object = Cancellation.objects.create(added_by=self.added_by)
-        elif self.category == 'Addition':
-            related_object = Addition.objects.create(added_by=self.added_by)
-        else:
-            related_object = None
+    # def save(self, *args, **kwargs):
+    #     if self.category == 'New Booking':
+    #         related_object = NewBooking.objects.create(added_by=self.added_by)
+    #     elif self.category == 'Cancelation':
+    #         related_object = Cancellation.objects.create(added_by=self.added_by)
+    #     elif self.category == 'Addition':
+    #         related_object = Addition.objects.create(added_by=self.added_by)
+    #     else:
+    #         related_object = None
 
-        try:
-            self.content_type = ContentType.objects.get_for_model(related_object)
-            self.object_id = related_object.id
-        except: pass
-        super().save(*args, **kwargs)
+    #     try:
+    #         self.content_type = ContentType.objects.get_for_model(related_object)
+    #         self.object_id = related_object.id
+    #     except: pass
+    #     super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.customer_name} - {self.phone}"
-
+        return f"{self.name} - {self.phone}"
 
 # BillingInformation Model
 class BillingInformation(models.Model):
