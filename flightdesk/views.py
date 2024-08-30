@@ -1,22 +1,8 @@
-# from django.shortcuts import render, get_object_or_404
-# from django.contrib import messages 
-# from .models import Booking
-
-
-# def approve_booking(request, booking_id):
-#   booking = get_object_or_404(Booking, booking_id=booking_id)
-#   booking.status = 'allocating'
-#   booking.save()
-#   messages.success(request, 'Booking approved.')
-#   return render(request, 'approved.html', {
-#     'mybooking_id': booking_id
-#   })
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
-from .models import CallLog, Campaign
-from .forms import CallLogForm, CampaignForm
+from .models import CallLog, Campaign, BillingInformation
+from .forms import CallLogForm, CampaignForm, BillingInformationForm, StaffCreationForm
 from django.db.models import Count
 from django.utils import timezone
 from datetime import timedelta
@@ -38,6 +24,7 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect('login')
+
 
 # Dashboard View
 @login_required
@@ -76,7 +63,6 @@ def dashboard(request):
         'data': data,
         'filter_type': filter_type,
     }
-    print(context['data'][0])
     return render(request, 'crm/dashboard.html', context)
 
 # Check for Supervisor Group
@@ -85,6 +71,28 @@ def is_supervisor(user):
 
 from django.db.models import Q
 from django.contrib.auth.models import User
+
+
+# Staff Views
+@login_required
+@user_passes_test(is_supervisor)
+def staff_create(request):
+    if request.method == 'POST':
+        form = StaffCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('staff_list')  # Redirect to a list of staff members
+    else:
+        form = StaffCreationForm()
+    return render(request, 'crm/staff_form.html', {'form': form})
+
+@login_required
+@user_passes_test(is_supervisor)
+def staff_list(request):
+    staff = User.objects.filter(groups__name__in=['agent', 'supervisor'])
+    return render(request, 'crm/staff_list.html', {'staff': staff})
+
+
 
 # CallLog Views
 @login_required
@@ -259,3 +267,94 @@ def campaign_delete(request, id):
         return redirect('campaign_list')
     return render(request, 'crm/campaign_confirm_delete.html', {'campaign': campaign})
 
+
+# Utility functions
+def is_supervisor(user):
+    return user.groups.filter(name='supervisor').exists()
+
+def is_agent(user):
+    return user.groups.filter(name='agent').exists()
+
+# Billing Information List View
+@login_required
+def billing_information_list(request):
+    user = request.user
+    is_supervisor = user.groups.filter(name='Supervisor').exists()
+    
+    if is_supervisor:
+        billing_infos = BillingInformation.objects.all()
+    else:
+        billing_infos = BillingInformation.objects.filter(added_by=user)
+    
+    # Hide sensitive information for agents
+    if is_agent(user):
+        for billing_info in billing_infos:
+            billing_info.card_number = billing_info.card_number[:4] + "****" * 2 + billing_info.card_number[-4:]
+            billing_info.card_cvv = "****"
+            billing_info.expiry_date = "****"
+    
+    context = {
+        'billing_infos': billing_infos,
+        'is_supervisor': is_supervisor,
+    }
+    return render(request, 'crm/billing_information_list.html', context)
+
+# Billing Information Create View
+@login_required
+@user_passes_test(is_agent)
+def billing_information_create(request):
+    if request.method == 'POST':
+        form = BillingInformationForm(request.POST)
+        if form.is_valid():
+            billing_info = form.save(commit=False)
+            billing_info.added_by = request.user
+            billing_info.save()
+            return redirect('billing_information_list')
+    else:
+        form = BillingInformationForm()
+    return render(request, 'crm/billing_information_form.html', {'form': form})
+
+# Billing Information Detail View
+@login_required
+def billing_information_detail(request, pk):
+    billing_info = get_object_or_404(BillingInformation, pk=pk)
+    user = request.user
+    
+    if is_agent(user) and billing_info.added_by != user:
+        return redirect('billing_information_list')  # Agents can't view others' billing info
+    
+    # Hide sensitive information for agents
+    if is_agent(user):
+        billing_info.card_number = billing_info.card_number[:4] + "****" * 2 + billing_info.card_number[-4:]
+        billing_info.card_cvv = "****"
+        billing_info.expiry_date = "****"
+    
+    context = {
+        'billing_info': billing_info,
+        'is_supervisor': is_supervisor(user),
+    }
+    return render(request, 'crm/billing_information_detail.html', context)
+
+# Billing Information Update View
+@login_required
+@user_passes_test(is_supervisor)
+def billing_information_update(request, pk):
+    billing_info = get_object_or_404(BillingInformation, pk=pk)
+    if request.method == 'POST':
+        form = BillingInformationForm(request.POST, instance=billing_info)
+        if form.is_valid():
+            form.save()
+            return redirect('billing_information_detail', pk=pk)
+    else:
+        form = BillingInformationForm(instance=billing_info)
+    return render(request, 'crm/billing_information_form.html', {'form': form})
+
+# Billing Information Delete View
+@login_required
+@user_passes_test(is_supervisor)
+def billing_information_delete(request, pk):
+    billing_info = get_object_or_404(BillingInformation, pk=pk)
+    if request.method == 'POST':
+        billing_info.delete()
+        return redirect('billing_information_list')
+    return render(request, 'crm/billing_information_confirm_delete.html', {'billing_info': billing_info})

@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.core.validators import RegexValidator
 from django.template.loader import render_to_string
+from django.core.validators import RegexValidator, EmailValidator
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
@@ -27,15 +28,13 @@ def generate_mybooking_id():
     
     return f'LM{today}{str(new_number).zfill(3)}'
 
-file_path = os.path.join(settings.BASE_DIR,'flightdesk/airport_data')
-with open(file_path, 'rb') as file:
-    airport_dict = pickle.load(file)
-
+# Campaign Model
 class Campaign(models.Model):
     code = models.CharField(max_length=50, unique=True)
 
     def __str__(self):
         return self.code
+
 
 # Calllog Model
 class CallLog(models.Model):
@@ -61,24 +60,9 @@ class CallLog(models.Model):
     tag = models.ForeignKey(Campaign, on_delete=models.SET_NULL, null=True, blank=True)
     concern = models.TextField(blank=True)
 
-    # def save(self, *args, **kwargs):
-    #     if self.category == 'New Booking':
-    #         related_object = NewBooking.objects.create(added_by=self.added_by)
-    #     elif self.category == 'Cancelation':
-    #         related_object = Cancellation.objects.create(added_by=self.added_by)
-    #     elif self.category == 'Addition':
-    #         related_object = Addition.objects.create(added_by=self.added_by)
-    #     else:
-    #         related_object = None
-
-    #     try:
-    #         self.content_type = ContentType.objects.get_for_model(related_object)
-    #         self.object_id = related_object.id
-    #     except: pass
-    #     super().save(*args, **kwargs)
-
     def __str__(self):
         return f"{self.name} - {self.phone}"
+
 
 # BillingInformation Model
 class BillingInformation(models.Model):
@@ -88,10 +72,12 @@ class BillingInformation(models.Model):
         ('MasterCard', 'MasterCard'),
         ('AmericanExpress', 'American Express'),
     )
-
     booking= models.ForeignKey('Booking', on_delete=models.CASCADE)
     card_type = models.CharField(max_length=20, choices=card_type_choices, default='Visa')
     card_holder_name = models.CharField(max_length=255)
+    card_holder_number = models.CharField(max_length=20)
+    email = models.EmailField(max_length=254, validators=[EmailValidator()])
+    
     card_number = models.CharField(
         max_length=16,
         validators=[RegexValidator(r'^\d{16}$', 'Enter a valid 16-digit card number.')])
@@ -101,8 +87,12 @@ class BillingInformation(models.Model):
     card_cvv = models.CharField(
         max_length=4,
         validators=[RegexValidator(r'^\d{3,4}$', 'Enter a valid CVV.')])
-    gateway_source = models.CharField(max_length=50, default = 'LOOKMYFLIGHT')
-    billing_address = models.TextField()
+    
+    primary_address = models.TextField()
+    country = models.CharField(max_length=100)
+    zipcode = models.CharField(
+        max_length=10,
+        validators=[RegexValidator(r'^\d{5}(-\d{4})?$', 'Enter a valid ZIP code.')])
 
     def __str__(self):
         return f'{self.card_type} - {self.card_holder_name}'
@@ -122,48 +112,14 @@ class Passenger(models.Model):
     ticket_number = models.CharField(max_length=50, blank=True)
 
 
-class FlightDetails(models.Model):
-
-    CURRENCY_CHOICES = (
-        ('USD', 'USD'),
-        ('GBP', 'GBP'),
-        ('CAD', 'CAD'),
-    )
-        
-    booking = models.ForeignKey('Booking', on_delete=models.CASCADE)
-    airline_name = models.CharField(max_length=255)
-    airline_cost = models.DecimalField(max_digits=10, decimal_places=2)
-    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default= 'USD')
-    gds_pnr = models.CharField(max_length=50, default=None)
-    from_location = models.CharField(max_length=255)
-    to_location = models.CharField(max_length=255)  
-    departure_datetime = models.DateTimeField()
-    arrival_datetime = models.DateTimeField()
-    flight_number = models.CharField(max_length=10)
-
-    @property
-    def duration(self):
-        return self.arrival_datetime - self.departure_datetime
-    
-    def set_airport_names_from_iata_code(self):
-        self.from_location = airport_dict.get(self.from_location.upper())
-        self.to_location = airport_dict.get(self.to_location.upper())
-
-    def save(self, *args, **kwargs):
-        self.set_airport_names_from_iata_code()
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f'FlightDetails for Booking ID: {self.booking.booking_id}'
-
-# Booking model
+# Booking Model
 class Booking(models.Model):
-
     CURRENCY_CHOICES = (
+        ('CAD', 'CAD'),
         ('USD', 'USD'),
         ('GBP', 'GBP'),
-        ('CAD', 'CAD'),
     )
+
     STATUS_CHOICES = (
         ('initiated', 'Initiated'),
         ('authorizing', 'Authorizing'),
@@ -172,61 +128,27 @@ class Booking(models.Model):
         ('cleared', 'Cleared'), 
     )
 
-    # relations
-    call_logs = GenericRelation(CallLog, related_query_name='mybooking_call_logs')
-    added_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, default= None, null= True)
-    
-    # booking information
-    booking_id = models.CharField(max_length=8, unique=True, default=generate_mybooking_id)
-    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default= 'USD')
-    amount = models.DecimalField(max_digits=10, decimal_places=2, default = 0)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='initiated')
-    agent_remarks = models.TextField(default=str, blank= True)
+    booking_id = models.CharField(max_length=20, unique=True, default=generate_mybooking_id, editable=False)
+    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES)
+    mco = models.IntegerField()
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='initiated')
     created_at = models.DateTimeField(auto_now_add=True)
+    added_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
+    regarding_flight = models.BooleanField(default=False)
+    regarding_hotel = models.BooleanField(default=False)
+    regarding_vehicle = models.BooleanField(default=False)
+    subcategory = models.CharField(max_length=255, blank=True)
 
-class NewBooking(Booking):
-    e_ticket = models.ImageField(upload_to='e_tickets', blank=True)
-    boarding_pass = models.ImageField(upload_to='boarding_passes', blank=True)
-
-    def __str__(self):
-        customer_name = self.call_logs.first().customer_name if self.call_logs.exists() else "N/A"
-        return f'New Booking of {self.booking_id} - Customer Name: {customer_name}'
-
-class Cancellation(Booking):
-    REASON_CHOICES = (
-        ('Schedule change', 'Schedule change'),
-        ('Personal reason', 'Personal reason'),
-        ('Price too high', 'Price too high'),
-        ('Other', 'Other'),
-    )
-
-    reason = models.CharField(max_length=100, choices=REASON_CHOICES)
-    pnr = models.CharField(max_length=20, unique=True)
-
-    def __str__(self):
-        customer_name = self.call_logs.first().customer_name if self.call_logs.exists() else "N/A"
-        return f'Cancellation of {self.booking_id} - {customer_name}'
-
-class AddInline(models.Model):
-
-    weight = models.DecimalField(decimal_places = 2, max_digits = 5, default = 0)
-    pet_type = models.CharField(max_length = 10, default = 'None')
-    no_of_meals = models.CharField(max_length = 1, default = 0)
-
-class Addition(Booking):
-    CHOICES = (
-        ('Baggage', 'Baggage'),
-        ('Meal', 'Meal'),
-        ('Pet', 'Pet'),
-    )
+    call_log = models.ForeignKey(CallLog, on_delete=models.SET_NULL, null=True, blank=True)
     
-    category = models.CharField(max_length=100, choices=CHOICES)
-    pnr = models.CharField(max_length=20, unique=True)
+    flight_info_img = models.ImageField(upload_to='booking/flight_info/', null=True, blank=True)
+    hotel_info_img = models.ImageField(upload_to='booking/hotel_info/', null=True, blank=True)
+    vehicle_info_img = models.ImageField(upload_to='booking/vehicle_info/', null=True, blank=True)
 
     def __str__(self):
-        customer_name = self.call_logs.first().customer_name if self.call_logs.exists() else "N/A"
-        return f'Addition of {self.booking_id} - {customer_name}'
+        return f"Booking {self.booking_id} - {self.status}"
+
 
 @receiver(post_save, sender=Booking)
 def create_notification(sender, instance, created, **kwargs):

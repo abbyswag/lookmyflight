@@ -15,8 +15,8 @@ ALLOWED_HOSTS = ['137.184.161.199', 'localhost', '127.0.0.1']
 # Application definition
 
 INSTALLED_APPS = [
-    'jazzmin',
-    'admin_tools_stats',
+    # 'jazzmin',
+    # 'admin_tools_stats',
     # 'django_nvd3',
     # 'admin_volt.apps.AdminVoltConfig',
     'django.contrib.admin',
@@ -26,8 +26,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'flightdesk',
-    'rest_framework',
-    'rest_framework.authtoken',
+    # 'rest_framework',
+    # 'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -40,8 +40,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-LOGIN_REDIRECT_URL = '/'
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# LOGIN_REDIRECT_URL = '/'
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 ROOT_URLCONF = 'app.urls'
 

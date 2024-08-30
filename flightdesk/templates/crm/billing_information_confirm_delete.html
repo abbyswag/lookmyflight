@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Billing Information{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow-lg">
+    <h2 class="text-2xl font-bold text-red-600 mb-4">Confirm Delete</h2>
+    <p class="mb-6">Are you sure you want to delete the billing information for {{ billing_info.card_holder_name }}?</p>
+    
+    <form method="POST">
+        {% csrf_token %}
+        <button type="submit" class="bg-red-600 text-white font-bold py-2 px-4 rounded hover:bg-red-700">Confirm Delete</button>
+        <a href="{% url 'billing_information_list' %}" class="bg-gray-600 text-white font-bold py-2 px-4 rounded hover:bg-gray-700 ml-4">Cancel</a>
+    </form>
+</div>
+{% endblock %}

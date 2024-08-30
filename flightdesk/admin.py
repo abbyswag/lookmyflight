@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.db.models import Q
 import os
 from .utils import send_email, save_email, create_auth_draft
-from .models import Passenger, BillingInformation, CallLog, NewBooking, Email, Addition, Cancellation, FlightDetails, EmailAttachtment, Campaign
+from .models import Passenger, BillingInformation, CallLog, Email, EmailAttachtment, Campaign
 
 class CustomerNameRegexFilter(admin.SimpleListFilter):
   title = 'name'
@@ -80,24 +80,11 @@ class PassengerInline(admin.TabularInline):
     extra = 1
 
 
-class BillingInformationInline(admin.StackedInline):
-    model = BillingInformation
-    can_delete = False
-    verbose_name_plural = 'Billing Details'
-    extra = 1
-
-
-class FlightDetailsInline(admin.StackedInline):
-    model = FlightDetails
-    can_delete = False
-    verbose_name_plural = "Flight Details"
-    extra = 1
-
 
 class BookingAdmin(admin.ModelAdmin):
     list_display = ('booking_id', 'customer_name', 'amount', 'status')
     exclude = ('added_by', )
-    inlines = [BillingInformationInline, PassengerInline, FlightDetailsInline]
+    inlines = [ PassengerInline]
     list_filter = (BookingStatusFilter, 'created_at',)
     fieldsets = (
         ('General', {
@@ -225,18 +212,6 @@ class CancellationAdmin(BookingAdmin):
         }),
     )
 
-class AddInlineInline(admin.StackedInline):
-    model= Addition
-    verbose_name_plural = 'Addition'
-    extra = 1
-
-class AdditionAdmin(BookingAdmin):
-    inlines = BookingAdmin.inlines + [AddInlineInline]
-    fieldsets = (
-        ('General', {
-            'fields': ('currency', 'amount', 'category', 'agent_remarks')
-        }),
-    )
 
 class EmailAttachtmentInline(admin.StackedInline):
     model = EmailAttachtment
@@ -295,8 +270,5 @@ class CampaignAdmin(admin.ModelAdmin):
     list_display = ('code',)
 
 admin.site.register(Campaign, CampaignAdmin)
-admin.site.register(Cancellation, CancellationAdmin)
 admin.site.register(Email, EmailAdmin)
 admin.site.register(CallLog, CallLogAdmin)
-admin.site.register(NewBooking, NewBookingAdmin)
-admin.site.register(Addition, AdditionAdmin)

@@ -1,0 +1,92 @@
+<!-- templates/crm/staff_form.html -->
+{% extends 'base.html' %}
+
+{% block title %}{% if form.instance.pk %}Edit Staff{% else %}Create Staff{% endif %}{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow overflow-hidden sm:rounded-lg max-w-2xl mx-auto">
+    <div class="px-4 py-5 sm:px-6">
+        <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+            {% if form.instance.pk %}Edit Staff{% else %}Create Staff{% endif %}
+        </h2>
+    </div>
+    <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <div>
+                <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-700">Username</label>
+                <div class="mt-1">
+                    <input type="text" name="{{ form.username.name }}" id="{{ form.username.id_for_label }}" 
+                           class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                           {% if form.username.value %}value="{{ form.username.value }}"{% endif %}>
+                </div>
+                {% if form.username.errors %}
+                <p class="mt-2 text-sm text-red-600">{{ form.username.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700">Email</label>
+                <div class="mt-1">
+                    <input type="email" name="{{ form.email.name }}" id="{{ form.email.id_for_label }}"
+                           class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                           {% if form.email.value %}value="{{ form.email.value }}"{% endif %}>
+                </div>
+                {% if form.email.errors %}
+                <p class="mt-2 text-sm text-red-600">{{ form.email.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <label for="{{ form.phone_number.id_for_label }}" class="block text-sm font-medium text-gray-700">Phone Number</label>
+                <div class="mt-1">
+                    <input type="tel" name="{{ form.phone_number.name }}" id="{{ form.phone_number.id_for_label }}"
+                           class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                           {% if form.phone_number.value %}value="{{ form.phone_number.value }}"{% endif %}>
+                </div>
+                {% if form.phone_number.errors %}
+                <p class="mt-2 text-sm text-red-600">{{ form.phone_number.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <label for="{{ form.group.id_for_label }}" class="block text-sm font-medium text-gray-700">Group</label>
+                <div class="mt-1">
+                    <select name="{{ form.group.name }}" id="{{ form.group.id_for_label }}"
+                            class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                        {% for value, label in form.group.field.choices %}
+                        <option value="{{ value }}" {% if form.group.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if form.group.errors %}
+                <p class="mt-2 text-sm text-red-600">{{ form.group.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            {% if not form.instance.pk %}
+            <div>
+                <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-gray-700">Password</label>
+                <div class="mt-1">
+                    <input type="password" name="{{ form.password.name }}" id="{{ form.password.id_for_label }}"
+                           class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                </div>
+                {% if form.password.errors %}
+                <p class="mt-2 text-sm text-red-600">{{ form.password.errors.0 }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <div class="flex justify-end">
+                <a href="{% url 'staff_list' %}" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Cancel
+                </a>
+                <button type="submit" class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    {% if form.instance.pk %}Update{% else %}Create{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

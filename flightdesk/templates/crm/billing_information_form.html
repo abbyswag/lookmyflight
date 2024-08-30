@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ billing_info.id|yesno:"Edit Billing Information,Add New Billing Information" }}{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow-lg">
+    <h2 class="text-2xl font-bold text-gray-800 mb-4">{{ billing_info.id|yesno:"Edit Billing Information,Add New Billing Information" }}</h2>
+    
+    <form method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        
+        <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700">
+            {% if billing_info.id %}Update{% else %}Create{% endif %}
+        </button>
+    </form>
+</div>
+{% endblock %}

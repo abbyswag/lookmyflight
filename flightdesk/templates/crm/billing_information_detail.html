@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Billing Information Detail{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow-lg">
+    <h2 class="text-2xl font-bold text-gray-800 mb-4">Billing Information Detail</h2>
+    
+    <div class="mb-4">
+        <strong>Card Type:</strong> {{ billing_info.card_type }}
+    </div>
+    <div class="mb-4">
+        <strong>Card Holder Name:</strong> {{ billing_info.card_holder_name }}
+    </div>
+    <div class="mb-4">
+        <strong>Card Number:</strong> {{ billing_info.card_number }}
+    </div>
+    <div class="mb-4">
+        <strong>Expiry Date:</strong> {{ billing_info.expiry_date }}
+    </div>
+    <div class="mb-4">
+        <strong>Billing Address:</strong> {{ billing_info.primary_address }}, {{ billing_info.country }}, {{ billing_info.zipcode }}
+    </div>
+    
+    {% if is_supervisor %}
+    <div class="flex space-x-4">
+        <a href="{% url 'billing_information_update' billing_info.id %}" class="bg-yellow-600 text-white font-bold py-2 px-4 rounded hover:bg-yellow-700">Edit</a>
+        <a href="{% url 'billing_information_delete' billing_info.id %}" class="bg-red-600 text-white font-bold py-2 px-4 rounded hover:bg-red-700">Delete</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
