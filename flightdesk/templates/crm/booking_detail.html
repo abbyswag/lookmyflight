@@ -173,7 +173,7 @@
                 <a href="{% url 'email_view' email.pk %}" class="text-blue-500 hover:text-blue-700">
                     {{ email.subject }}
                 </a>
-                <span class="text-sm text-gray-500"> (Sent at: {{ email.sent_at }})</span>
+                <!-- <span class="text-sm text-gray-500"> (Sent at: {{ email.sent_at }})</span> -->
             </li>
             {% endfor %}
         </ul>

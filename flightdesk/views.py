@@ -455,7 +455,7 @@ def email_list(request):
 @login_required
 def create_email(request, booking_id):
     booking = get_object_or_404(Booking, booking_id=booking_id)
-    if booking.status != 'allocating':
+    if booking.status == "confirmed" or booking.status == "cleared":
         return HttpResponseForbidden("Booking must be approved to send an email.")
     
     form = EmailForm(initial={
@@ -490,7 +490,7 @@ def email_create(request, booking_id):
 
         form = EmailForm(initial={
             'recipient': booking.call_log.email,
-            'subject': f'Booking Initialization: {booking.booking_id}',
+            'subject': f'Booking Authorization: {booking.booking_id}',
             'body': email_body
         })
         if form.is_valid():
