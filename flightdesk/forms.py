@@ -40,9 +40,10 @@
 
 
 from django import forms
-from .models import CallLog, Campaign, BillingInformation
+from .models import CallLog, Campaign, BillingInformation, Booking, Email
 from django.contrib.auth.models import User, Group
 from django.core.exceptions import ValidationError
+from django_summernote.widgets import SummernoteWidget
 
 class CallLogForm(forms.ModelForm):
     class Meta:
@@ -126,3 +127,17 @@ class BillingInformationForm(forms.ModelForm):
         if len(card_cvv) not in [3, 4] or not card_cvv.isdigit():
             raise forms.ValidationError("Enter a valid 3 or 4 digit CVV.")
         return card_cvv
+
+class BookingForm(forms.ModelForm):
+    class Meta:
+        model = Booking
+        fields = ['status', 'currency', 'mco', 'regarding_flight', 'regarding_hotel', 'regarding_vehicle', 'subcategory']
+        # Add or remove fields as necessary
+
+class EmailForm(forms.ModelForm):
+    class Meta:
+        model = Email
+        fields = ['subject', 'recipient', 'body']
+        widgets = {
+            'body': SummernoteWidget(),
+        }

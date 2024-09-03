@@ -59,9 +59,12 @@
                 <a href="{% url 'call_log_list' %}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-200 hover:text-blue-600">
                     Call Logs
                 </a>
-                <!-- <a href="{% url 'billing_information_list' %}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-200 hover:text-blue-600">
-                    Billing Information
-                </a> -->
+                <a href="{% url 'booking_list' %}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-200 hover:text-blue-600">
+                    Booking
+                </a>
+                <a href="{% url 'email_list' %}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-200 hover:text-blue-600">
+                    Email
+                </a>
                 {% if is_supervisor %}
                 <a href="{% url 'campaign_list' %}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-200 hover:text-blue-600">
                     Campaigns
@@ -101,7 +104,7 @@
                     <!-- Customer Selection Section -->
                     <div class="mb-6">
                         <label class="block text-gray-700 mb-2">Select Customer</label>
-                        <input type="text" placeholder="Search Customer..." class="mb-4 w-full p-2 border rounded">
+                        <input type="text" id="customerSearch" placeholder="Search Customer..." class="mb-4 w-full p-2 border rounded">
                         <div id="customerList" class="max-h-60 overflow-y-auto mb-4">
                             <!-- Dynamic customer list rendered here -->
                         </div>
@@ -111,18 +114,26 @@
                     <div class="mb-4">
                         <h4 class="text-lg font-semibold text-gray-800 mb-2">Booking Options</h4>
                         <div class="space-x-4 mb-4">
-                            <label><input type="checkbox" class="mr-2"> Flight</label>
-                            <label><input type="checkbox" class="mr-2"> Hotel</label>
-                            <label><input type="checkbox" class="mr-2"> Vehicle</label>
+                            <label><input type="checkbox" id="isFlightCheckbox" class="mr-2"> Flight</label>
+                            <label><input type="checkbox" id="isHotelCheckbox" class="mr-2"> Hotel</label>
+                            <label><input type="checkbox" id="isVehicleCheckbox" class="mr-2"> Vehicle</label>
                         </div>
                         <div class="mb-4">
                             <label class="block text-gray-700">Subcategory</label>
-                            <input type="text" class="w-full p-2 border rounded">
+                            <input type="text" id="subcategoryInput" class="w-full p-2 border rounded">
                         </div>
                         <div class="mb-4">
                             <label class="block text-gray-700">MCO</label>
-                            <input type="number" class="w-full p-2 border rounded">
+                            <input type="number" id="mcoInput" class="w-full p-2 border rounded">
                         </div>
+                        <div class="mb-4">
+                            <label class="block text-gray-700">Currency</label>
+                            <select id="currencySelect" class="w-full p-2 border rounded">
+                                <option value="CAD">CAD</option>
+                                <option value="USD">USD</option>
+                                <option value="GBP">GBP</option>
+                            </select>
+                        </div>                    
                         <div class="mb-4">
                             <label class="block text-gray-700">Remark</label>
                             <textarea class="w-full p-2 border rounded"></textarea>
@@ -137,68 +148,71 @@
                 <!-- Step 2: Billing Information -->
                 <div id="step2" class="step hidden">
                     <h3 class="text-xl font-semibold text-gray-800 mb-4">Step 2: Billing Information</h3>
-                    <!-- Billing Information Form -->
-                    <form class="space-y-4">
+                    <form id="billingForm" class="space-y-4">
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-gray-700">Card Holder Name</label>
-                                <input type="text" class="w-full p-2 border rounded">
+                                <input type="text" id="cardHolderName" class="w-full p-2 border rounded" required>
                             </div>
                             <div>
                                 <label class="block text-gray-700">Card Holder Number</label>
-                                <input type="text" class="w-full p-2 border rounded">
+                                <input type="text" id="cardHolderNumber" class="w-full p-2 border rounded" required>
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-gray-700">Email</label>
-                                <input type="email" class="w-full p-2 border rounded">
+                                <input type="email" id="email" class="w-full p-2 border rounded" required>
                             </div>
                             <div>
                                 <label class="block text-gray-700">Card Type</label>
-                                <select class="w-full p-2 border rounded">
-                                    <option>Visa</option>
-                                    <option>MasterCard</option>
-                                    <option>American Express</option>
+                                <select id="cardType" class="w-full p-2 border rounded" required>
+                                    <option value="Visa">Visa</option>
+                                    <option value="MasterCard">MasterCard</option>
+                                    <option value="AmericanExpress">American Express</option>
                                 </select>
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-gray-700">Card Number</label>
-                                <input type="text" class="w-full p-2 border rounded">
+                                <input type="text" id="cardNumber" class="w-full p-2 border rounded" required>
                             </div>
                             <div>
                                 <label class="block text-gray-700">Expiry Date</label>
-                                <input type="text" class="w-full p-2 border rounded" placeholder="MM/YY">
+                                <input type="text" id="expiryDate" class="w-full p-2 border rounded" placeholder="MM/YY" required>
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-gray-700">CVV</label>
-                                <input type="text" class="w-full p-2 border rounded">
+                                <input type="text" id="cvv" class="w-full p-2 border rounded" required>
                             </div>
                             <div>
                                 <label class="block text-gray-700">ZIP Code</label>
-                                <input type="text" class="w-full p-2 border rounded">
+                                <input type="text" id="zipCode" class="w-full p-2 border rounded" required>
                             </div>
                         </div>
                         <div>
                             <label class="block text-gray-700">Billing Address</label>
-                            <textarea class="w-full p-2 border rounded"></textarea>
+                            <textarea id="billingAddress" class="w-full p-2 border rounded" required></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700">Country</label>
+                            <input type="text" id="country" class="w-full p-2 border rounded" required>
                         </div>
                     </form>
                     <div class="space-x-4 mt-4">
                         <button id="backToStep1" class="bg-gray-400 text-white px-4 py-2 rounded">Back</button>
                         <button id="nextToStep3" class="bg-blue-600 text-white px-4 py-2 rounded">Next</button>
                     </div>
-                </div>
+                </div>                
 
                 <!-- Step 3: Add Passengers -->
                 <div id="step3" class="step hidden">
                     <h3 class="text-xl font-semibold text-gray-800 mb-4">Step 3: Add Passengers</h3>
                     <div id="passengersList" class="space-y-4">
-                        <!-- Passenger forms go here -->
+                        <!-- Passenger forms will be dynamically added here -->
                     </div>
                     <button id="addPassenger" class="bg-green-600 text-white px-4 py-2 rounded mb-4">+ Add Passenger</button>
                     <div class="space-x-4">
@@ -209,18 +223,18 @@
 
                 <!-- Step 4: Upload Images -->
                 <div id="step4" class="step hidden">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Step 4: Upload Images</h3>
-                    <div class="mb-4">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Step 4: Paste Information Screenshots</h3>
+                    <div id="flightInfoTab" class="mb-4" style="display: block;">
                         <label class="block text-gray-700">Flight Information</label>
-                        <input type="file" class="w-full p-2 border rounded">
+                        <div id="flightInfoImage" class="w-full p-2 border rounded h-40 overflow-auto" contenteditable="true"></div>
                     </div>
-                    <div class="mb-4">
+                    <div id="hotelInfoTab" class="mb-4" style="display: none;">
                         <label class="block text-gray-700">Hotel Information</label>
-                        <input type="file" class="w-full p-2 border rounded">
+                        <div id="hotelInfoImage" class="w-full p-2 border rounded h-40 overflow-auto" contenteditable="true"></div>
                     </div>
-                    <div class="mb-4">
+                    <div id="vehicleInfoTab" class="mb-4" style="display: none;">
                         <label class="block text-gray-700">Vehicle Information</label>
-                        <input type="file" class="w-full p-2 border rounded">
+                        <div id="vehicleInfoImage" class="w-full p-2 border rounded h-40 overflow-auto" contenteditable="true"></div>
                     </div>
                     <div class="space-x-4">
                         <button id="backToStep3" class="bg-gray-400 text-white px-4 py-2 rounded">Back</button>
@@ -251,64 +265,349 @@
             document.getElementById('profile-dropdown').classList.toggle('hidden');
         });
     </script>
-        <script>
-            document.getElementById('openModal').addEventListener('click', function() {
-                document.getElementById('bookingModal').classList.remove('hidden');
-            });
-    
-            function showStep(step) {
-                document.querySelectorAll('.step').forEach(function(el) {
-                    el.classList.add('hidden');
+
+    <!-- script for fetch requests -->
+     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+        const customerSearch = document.getElementById('customerSearch');
+        const customerList = document.getElementById('customerList');
+        let selectedCustomerId = null;
+        let currentBookingId = null;
+        let debounceTimer;
+
+        customerSearch.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                const searchTerm = this.value.trim();
+                // console.log(searchTerm)
+                if (searchTerm.length > 2) {
+                    fetchCustomers(searchTerm);
+                } else {
+                    customerList.innerHTML = '';
+                }
+            }, 300);
+        });
+
+        function fetchCustomers(searchTerm) {
+            fetch(`/api/search-customers/?term=${encodeURIComponent(searchTerm)}`)
+                .then(response => response.json())
+                .then(data => {
+                    displayCustomers(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching customers:', error);
                 });
-                document.getElementById(step).classList.remove('hidden');
+        }
+
+        function displayCustomers(customers) {
+            customerList.innerHTML = '';
+            if (customers.length === 0) {
+                customerList.innerHTML = '<p class="text-gray-500">No customers found</p>';
+                return;
             }
-    
-            document.getElementById('nextToStep2').addEventListener('click', function() {
-                showStep('step2');
+            const ul = document.createElement('ul');
+            customers.forEach(customer => {
+                const li = document.createElement('li');
+                li.textContent = `${customer.name} (${customer.phone})`;
+                li.classList.add('p-2', 'hover:bg-gray-100', 'cursor-pointer');
+                li.addEventListener('click', () => selectCustomer(customer));
+                ul.appendChild(li);
             });
-            document.getElementById('backToStep1').addEventListener('click', function() {
-                showStep('step1');
+            customerList.appendChild(ul);
+        }
+
+        function selectCustomer(customer) {
+            customerSearch.value = customer.name;
+            customerList.innerHTML = '';
+            selectedCustomerId = customer.id;
+        }
+
+        function handlePaste(e) {
+            const clipboardData = e.clipboardData || window.clipboardData;
+            const items = clipboardData.items;
+
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    const blob = items[i].getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const img = document.createElement('img');
+                        img.src = event.target.result;
+                        img.style.maxWidth = '100%';
+                        e.target.appendChild(img);
+                    };
+                    reader.readAsDataURL(blob);
+                    e.preventDefault();
+                }
+            }
+        }
+
+        function getImagesAsBase64(container) {
+            const images = container.getElementsByTagName('img');
+            return Array.from(images).map(img => img.src);
+        }
+
+        document.getElementById('flightInfoImage').addEventListener('paste', handlePaste);
+        document.getElementById('hotelInfoImage').addEventListener('paste', handlePaste);
+        document.getElementById('vehicleInfoImage').addEventListener('paste', handlePaste);
+
+        function updateInfoTabs() {
+            const flightTab = document.getElementById('flightInfoTab');
+            const hotelTab = document.getElementById('hotelInfoTab');
+            const vehicleTab = document.getElementById('vehicleInfoTab');
+
+            flightTab.style.display = document.getElementById('isFlightCheckbox').checked ? 'block' : 'none';
+            hotelTab.style.display = document.getElementById('isHotelCheckbox').checked ? 'block' : 'none';
+            vehicleTab.style.display = document.getElementById('isVehicleCheckbox').checked ? 'block' : 'none';
+        }
+        
+        updateInfoTabs();
+
+        document.getElementById('isFlightCheckbox').addEventListener('change', updateInfoTabs);
+        document.getElementById('isHotelCheckbox').addEventListener('change', updateInfoTabs);
+        document.getElementById('isVehicleCheckbox').addEventListener('change', updateInfoTabs);
+
+
+        function showStep(step) {
+            document.querySelectorAll('.step').forEach(function(el) {
+                el.classList.add('hidden');
             });
-            document.getElementById('nextToStep3').addEventListener('click', function() {
-                showStep('step3');
+            document.getElementById(step).classList.remove('hidden');
+        }
+
+        document.getElementById('nextToStep2').addEventListener('click', function() {
+            if (!selectedCustomerId) {
+                alert('Please select a customer first.');
+                return;
+            }
+
+            const bookingData = {
+                call_log: selectedCustomerId,
+                mco: document.getElementById('mcoInput').value,
+                currency: document.getElementById('currencySelect').value,
+                regarding_flight: document.getElementById('isFlightCheckbox').checked,
+                regarding_hotel: document.getElementById('isHotelCheckbox').checked,
+                regarding_vehicle: document.getElementById('isVehicleCheckbox').checked,
+                subcategory: document.getElementById('subcategoryInput').value,
+            };
+
+            fetch('/api/create-booking/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')  // You'll need to implement getCookie
+                },
+                body: JSON.stringify(bookingData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // console.log('Booking created successfully:', data.booking_id);
+                    currentBookingId = data.booking_id
+                    showStep('step2');
+                } else {
+                    alert('Error creating booking: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while creating the booking.');
             });
-            document.getElementById('backToStep2').addEventListener('click', function() {
-                showStep('step2');
+        });
+
+        // billing information section
+        document.getElementById('nextToStep3').addEventListener('click', function() {
+            const billingData = {
+                booking_id: currentBookingId,
+                card_type: document.getElementById('cardType').value,
+                card_holder_name: document.getElementById('cardHolderName').value,
+                card_holder_number: document.getElementById('cardHolderNumber').value,
+                email: document.getElementById('email').value,
+                card_number: document.getElementById('cardNumber').value,
+                expiry_date: document.getElementById('expiryDate').value,
+                card_cvv: document.getElementById('cvv').value,
+                primary_address: document.getElementById('billingAddress').value,
+                country: document.getElementById('country').value,
+                zipcode: document.getElementById('zipCode').value
+            };
+
+            fetch('/api/add-billing-info/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(billingData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Billing information added successfully:', data.billing_id);
+                    showStep('step3');
+                } else {
+                    alert('Error adding billing information: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while adding billing information.');
             });
-            document.getElementById('nextToStep4').addEventListener('click', function() {
-                showStep('step4');
-            });
-            document.getElementById('backToStep3').addEventListener('click', function() {
-                showStep('step3');
-            });
-    
-            // Add Passenger
-            document.getElementById('addPassenger').addEventListener('click', function() {
-                const passengerForm = document.createElement('div');
-                passengerForm.innerHTML = `
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-gray-700">Passenger Name</label>
-                            <input type="text" class="w-full p-2 border rounded">
-                        </div>
-                        <div>
-                            <label class="block text-gray-700">Age</label>
-                            <input type="number" class="w-full p-2 border rounded">
-                        </div>
+        });        
+
+        // passenger section logic
+        let passengerCount = 0;
+
+        function addPassengerForm() {
+            passengerCount++;
+            const passengerForm = document.createElement('div');
+            passengerForm.classList.add('passenger-form', 'border', 'p-4', 'rounded', 'mb-4');
+            passengerForm.innerHTML = `
+                <h4 class="font-semibold mb-2">Passenger ${passengerCount}</h4>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-700">Full Name</label>
+                        <input type="text" class="passenger-name w-full p-2 border rounded" required>
                     </div>
-                `;
-                document.getElementById('passengersList').appendChild(passengerForm);
+                    <div>
+                        <label class="block text-gray-700">Date of Birth</label>
+                        <input type="date" class="passenger-dob w-full p-2 border rounded" required>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mt-2">
+                    <div>
+                        <label class="block text-gray-700">Gender</label>
+                        <select class="passenger-gender w-full p-2 border rounded" required>
+                            <option value="">Select Gender</option>
+                            <option value="M">Male</option>
+                            <option value="F">Female</option>
+                            <option value="O">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Ticket Number (optional)</label>
+                        <input type="text" class="passenger-ticket w-full p-2 border rounded">
+                    </div>
+                </div>
+            `;
+            document.getElementById('passengersList').appendChild(passengerForm);
+        }
+
+        document.getElementById('addPassenger').addEventListener('click', addPassengerForm);
+
+        document.getElementById('nextToStep4').addEventListener('click', function() {
+            const passengers = [];
+            document.querySelectorAll('.passenger-form').forEach(form => {
+                passengers.push({
+                    full_passenger_name: form.querySelector('.passenger-name').value,
+                    date_of_birth: form.querySelector('.passenger-dob').value,
+                    gender: form.querySelector('.passenger-gender').value,
+                    ticket_number: form.querySelector('.passenger-ticket').value
+                });
             });
-    
-            document.getElementById('saveBooking').addEventListener('click', function() {
-                // Add your save logic here
+
+            if (passengers.length === 0) {
+                alert('Please add at least one passenger.');
+                return;
+            }
+
+            const passengersData = {
+                booking_id: currentBookingId, 
+                passengers: passengers
+            };
+
+            fetch('/api/add-passengers/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(passengersData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Passengers added successfully');
+                    showStep('step4');
+                } else {
+                    alert('Error adding passengers: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while adding passengers.');
             });
-        </script>
+        });
+
+        // Add the first passenger form by default
+        addPassengerForm();     
+        
+        document.getElementById('openModal').addEventListener('click', function() {
+            document.getElementById('bookingModal').classList.remove('hidden');
+        });
+
+        document.getElementById('backToStep1').addEventListener('click', function() {
+            showStep('step1');
+        });
+        document.getElementById('backToStep2').addEventListener('click', function() {
+            showStep('step2');
+        });
+        document.getElementById('backToStep3').addEventListener('click', function() {
+            showStep('step3');
+        });
+
+        document.getElementById('saveBooking').addEventListener('click', function() {
+            const bookingData = {
+                booking_id: currentBookingId,
+                flight_info_img: getImagesAsBase64(document.getElementById('flightInfoImage')),
+                hotel_info_img: getImagesAsBase64(document.getElementById('hotelInfoImage')),
+                vehicle_info_img: getImagesAsBase64(document.getElementById('vehicleInfoImage')),
+            };
+
+            fetch('/api/save-booking/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(bookingData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = `/emails/create/${data.booking_id}/`;
+                } else {
+                    alert('Error saving booking: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while saving the booking.');
+            });
+        });
+
+        // Function to get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+    });
+    </script>
     
-        <!-- Scripts Block -->
-        {% block scripts %}
-        <!-- Default scripts can be added here -->
-        {% endblock %}
+    <!-- Scripts Block -->
+    {% block scripts %}
+    <!-- Default scripts can be added here -->
+    {% endblock %}
 
 </body>
 </html>

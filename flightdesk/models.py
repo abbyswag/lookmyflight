@@ -74,9 +74,9 @@ class BillingInformation(models.Model):
     )
     booking= models.ForeignKey('Booking', on_delete=models.CASCADE)
     card_type = models.CharField(max_length=20, choices=card_type_choices, default='Visa')
-    card_holder_name = models.CharField(max_length=255)
-    card_holder_number = models.CharField(max_length=20)
-    email = models.EmailField(max_length=254, validators=[EmailValidator()])
+    card_holder_name = models.CharField(max_length=255, default= None)
+    card_holder_number = models.CharField(max_length=20, default= None)
+    email = models.EmailField(max_length=254, validators=[EmailValidator()], default= None)
     
     card_number = models.CharField(
         max_length=16,
@@ -88,11 +88,11 @@ class BillingInformation(models.Model):
         max_length=4,
         validators=[RegexValidator(r'^\d{3,4}$', 'Enter a valid CVV.')])
     
-    primary_address = models.TextField()
-    country = models.CharField(max_length=100)
+    primary_address = models.TextField(default= None)
+    country = models.CharField(max_length=100, default= None)
     zipcode = models.CharField(
         max_length=10,
-        validators=[RegexValidator(r'^\d{5}(-\d{4})?$', 'Enter a valid ZIP code.')])
+        validators=[RegexValidator(r'^\d{5}(-\d{4})?$', 'Enter a valid ZIP code.')], default= None)
 
     def __str__(self):
         return f'{self.card_type} - {self.card_holder_name}'
@@ -130,7 +130,7 @@ class Booking(models.Model):
 
     booking_id = models.CharField(max_length=20, unique=True, default=generate_mybooking_id, editable=False)
     currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES)
-    mco = models.IntegerField()
+    mco = models.IntegerField(default= 0)
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='initiated')
     created_at = models.DateTimeField(auto_now_add=True)
     added_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -184,5 +184,5 @@ class Email(models.Model):
     recipient = models.EmailField()
     body = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
-    added_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, default= None, null= True, related_name = 'creator') 
+    booking= models.ForeignKey('Booking', on_delete=models.CASCADE, default=None)
 

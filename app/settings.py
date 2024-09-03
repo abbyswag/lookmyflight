@@ -26,7 +26,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'flightdesk',
-    # 'rest_framework',
+    'django_summernote',
     # 'rest_framework.authtoken',
 ]
 

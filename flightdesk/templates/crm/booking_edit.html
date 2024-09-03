@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Edit Booking</h1>
+<form method="post" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+        Save Changes
+    </button>
+</form>
+
+<h2 class="text-xl font-bold mt-8 mb-4">Associated Billing Information</h2>
+{% if billing_info %}
+<div class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <!-- Display billing information details (same as in booking_detail.html) -->
+</div>
+{% else %}
+<p>No billing information associated with this booking.</p>
+{% endif %}
+
+<h2 class="text-xl font-bold mt-8 mb-4">Associated Call Log</h2>
+{% if call_log %}
+<div class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <!-- Display call log details (same as in booking_detail.html) -->
+</div>
+{% else %}
+<p>No call log associated with this booking.</p>
+{% endif %}
+
+{% endblock %}

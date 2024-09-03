@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Bookings</h1>
+<div class="overflow-x-auto">
+    <table class="min-w-full bg-white">
+        <thead>
+            <tr>
+                <th class="py-2 px-4 border-b">Booking ID</th>
+                <th class="py-2 px-4 border-b">Status</th>
+                <th class="py-2 px-4 border-b">Created At</th>
+                <th class="py-2 px-4 border-b">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for booking in bookings %}
+            <tr>
+                <td class="py-2 px-4 border-b">{{ booking.booking_id }}</td>
+                <td class="py-2 px-4 border-b">{{ booking.status }}</td>
+                <td class="py-2 px-4 border-b">{{ booking.created_at }}</td>
+                <td class="py-2 px-4 border-b">
+                    <a href="{% url 'booking_detail' booking.pk %}" class="text-blue-600 hover:underline">View</a>
+                    <a href="{% url 'booking_edit' booking.pk %}" class="ml-2 text-green-600 hover:underline">Edit</a>
+                    <a href="{% url 'booking_delete' booking.pk %}" class="text-red-600 hover:underline">Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

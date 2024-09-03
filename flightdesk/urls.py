@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import api
 from django.shortcuts import redirect
 
 def redirect_to_login(request):
@@ -38,4 +39,26 @@ urlpatterns = [
     path('billing/<int:pk>/', views.billing_information_detail ,name='billing_information_detail'),
     path('billing/<int:pk>/edit/', views.billing_information_update, name='billing_information_update'),
     path('billing/<int:pk>/delete/', views.billing_information_delete, name='billing_information_delete'),
+
+    path('bookings/', views.booking_list, name='booking_list'),
+    path('bookings/<int:pk>/', views.booking_detail, name='booking_detail'),
+    path('bookings/<int:pk>/edit/', views.booking_edit, name='booking_edit'),
+    path('booking/delete/<int:pk>/', views.booking_delete, name='booking_delete'),
+    path('bookings/<int:booking_pk>/add-billing-info/', views.billing_info, name='billing_info'),
+
+    path('api/search-customers/', api.search_customers, name='search_customers'),
+    path('api/create-booking/', api.create_booking, name='create_booking'),
+    path('api/add-billing-info/', api.add_billing_info, name='add_billing_info'),
+    path('api/add-passengers/', api.add_passengers, name='add_passengers'),
+
+    path('emails/', views.email_list, name='email_list'),
+    path('emails/create/<str:booking_id>/', views.email_create, name='email_create'),
+    path('emails/<int:pk>/edit/', views.email_edit, name='email_edit'),
+    path('emails/<int:pk>/view/', views.email_view, name='email_view'),
+    path('emails/<int:pk>/delete/', views.email_delete, name='email_delete'),
+    path('emails/<int:pk>/send/', views.email_send, name='email_send'),
+    path('api/save-booking/', api.save_booking, name='save_booking'),
+
+    path('approve/<str:booking_id>/', views.approve_booking, name='approve_booking'),
+
 ]

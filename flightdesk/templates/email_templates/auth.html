@@ -13,47 +13,26 @@
   </p>    
 </div>
 
-<!-- passenger detail sections -->
-<div>
-  <h2 class="highlited">Passengers Details</h2>
-  <table width="100%" border="1" cellpadding="5" cellspacing="0">
-    <thead>
-      <tr>
-        <th>Passenger Name</th>
-        <th>Date Of Birth</th>
-        <th>Gender</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for passenger in passengers %}
-      <tr style="text-align: center;">
-        <td >{{ passenger.full_passenger_name }}</td>
-        <td>{{ passenger.date_of_birth }}</td>
-        <td>{{ passenger.gender }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-<br>
-
 <!-- flight detail sections -->
 <div>
   <h2 class="highlited">Flights Details</h2>
-  {% for flight in flights %}
-  <div style="display: flex; padding: 0.5rem; border: solid #000 1px;">
-    <div style="font-size: 1.2rem; padding-left: 5rem; width: 50vw;">
-        <p><strong>{{flight.from_location}}</strong> <br> {{flight.departure_datetime}}</p>
-        <p><strong>{{flight.to_location }}</strong> <br> {{flight.arrival_datetime}}</p>
-    </div>
-    <div style="font-size: 1.2rem; text-align: right; padding-right: 10rem; width: 100vw;">
-        <p>Airline : {{flight.airline_name}}</p>
-        <p>Fight No: {{flight.flight_number}}</p>
-        <p>Duration: {{flight.duration}}</p>
-        <p><strong>PNR: {{flight.gds_pnr}}</strong></p>
-    </div>
-  </div>
-  {% endfor %}
+  {% if flight_info_img %}
+    <img src="{{ flight_info_img }}" alt="Flight Information" style="width: 100%; max-width: 600px;">
+  {% endif %}
+</div>
+<br>
+<div>
+  <h2 class="highlited">Hotel Details</h2>
+  {% if hotel_info_img %}
+    <img src="{{ hotel_info_img }}" alt="Hotel Information" style="width: 100%; max-width: 600px;">
+  {% endif %}
+</div>
+<br>
+<div>
+  <h2 class="highlited">Vehicle Details</h2>
+  {% if vehicle_info_img %}
+    <img src="{{ vehicle_info_img }}" alt="Vehicle Information" style="width: 100%; max-width: 600px;">
+  {% endif %}
 </div>
 <br>
 
@@ -62,20 +41,6 @@
   <h2 class="highlited">Price Details</h2>
   <table width="100%" border="1" cellpadding="5" cellspacing="0">
     <thead>
-      <tr>
-        <th>Price Summary</th>
-        <th>Base Fair</th>
-        <th>Taxes & Fees</th>
-        <th>Total Cost</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr style="text-align: center;">
-        <td>{{ adult_count }} Passengers</td>
-        <td>{{ airline_cost }}</td>
-        <td>{{ tax_fee }}</td>
-        <td>{{ booking.amount }}</td>
-      </tr>
       <tr bgcolor="#FFFFCC">
         <td colspan="3"><strong>Total Flight Booking Amount (Including Taxes and Fees):</strong></td>
         <td><strong>{{booking.currency}} {{ booking.amount }}</strong></td>
@@ -91,35 +56,40 @@
   <table width="100%" border="1" cellpadding="5" cellspacing="0">
     <thead>
       <tr>
-        <th>Crad Holder Name</th>
+        <th>Card Holder Name</th>
         <th>Card Number</th>
         <th>Card Type</th>
         <th>Phone Number</th>
       </tr>
     </thead>
     <tbody>
-      {% for b, n in billing %}
+      {% for b in billing_info %}
       <tr style="text-align: center;">
         <td>{{ b.card_holder_name }}</td>
-        <td>**** **** **** {{ n }}</td>
+        <td>**** **** **** {{ b.card_number|slice:":4" }}</td>
         <td>{{ b.card_type }}</td>
-        <td>{{ phone }}</td>
+        <td>{{ booking.call_log.phone }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4">No card information available.</td>
       </tr>
       {% endfor %}
       <tr bgcolor="#FFFFCC">
         <td colspan="3"><strong>Total Amount Charged:</strong></td>
-        <td><strong>{{booking.currency}} {{ booking.amount }}</strong></td>
+        <td><strong>{{ booking.currency }} {{ booking.mco }}</strong></td>
       </tr>
     </tbody>
   </table>
 </div>
+
 
 <div>
   <p style="text-align: center;"> You may see more than one transaction on your card but will not exceed the total amount as advised.</p>
   <p style="text-align: center;">By Clicking on the Authorize button, you agree to the above mentioned terms.</p>
   <br>
   <div style="display: flex; justify-content: space-between; align-items: center;">
-    <p>Agent: {{booking.added_by}} <br> Contact: {{booking.added_by.last_name}}</p>
+    <p>Agent: {{booking.added_by.username}} <br> Contact: {{booking.added_by.last_name}}</p>
     <a style="margin-left: 40rem;" href="{{ approval_url }}"><button style="background-color: rgb(233, 142, 105);">Authorize</button></a>
   </div>
 </div>

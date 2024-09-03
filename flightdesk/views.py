@@ -1,12 +1,15 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
-from .models import CallLog, Campaign, BillingInformation
-from .forms import CallLogForm, CampaignForm, BillingInformationForm, StaffCreationForm
+from .models import CallLog, Campaign, BillingInformation, Booking, Passenger, Email
+from .forms import CallLogForm, CampaignForm, BillingInformationForm, StaffCreationForm, BookingForm, EmailForm
 from django.db.models import Count
 from django.utils import timezone
+from django.urls import reverse
 from datetime import timedelta
+from django.template.loader import render_to_string
 from django.db.models.functions import TruncDate
+from django.utils.html import format_html
 
 # Authentication Views
 def login_view(request):
@@ -358,3 +361,205 @@ def billing_information_delete(request, pk):
         billing_info.delete()
         return redirect('billing_information_list')
     return render(request, 'crm/billing_information_confirm_delete.html', {'billing_info': billing_info})
+
+
+@login_required
+def booking_list(request):
+    if is_agent(request.user):
+        bookings = Booking.objects.filter(added_by=request.user)
+    else:
+        bookings = Booking.objects.all()
+    return render(request, 'crm/booking_list.html', {'bookings': bookings})
+
+@login_required
+def booking_detail(request, pk):
+    booking = get_object_or_404(Booking, pk=pk)
+    if is_agent(request.user) and booking.added_by != request.user:
+        return redirect('booking_list')
+
+    passengers = Passenger.objects.filter(booking=booking)
+    billing_infos = BillingInformation.objects.filter(booking=booking)
+    emails = Email.objects.filter(booking=booking) 
+    
+    context = {
+        'booking': booking,
+        'passengers': passengers,
+        'billing_infos': billing_infos,
+        'emails': emails, 
+        'is_agent': is_agent(request.user),
+    }
+    return render(request, 'crm/booking_detail.html', context)
+
+@login_required
+def booking_edit(request, pk):
+    booking = get_object_or_404(Booking, pk=pk)
+    if is_agent(request.user) and booking.added_by != request.user:
+        return redirect('booking_list')
+
+    if request.method == 'POST':
+        form = BookingForm(request.POST, instance=booking)
+        if form.is_valid():
+            form.save()
+            return redirect('booking_detail', pk=booking.pk)
+    else:
+        form = BookingForm(instance=booking)
+
+    passengers = Passenger.objects.filter(booking=booking)
+    billing_infos = BillingInformation.objects.filter(booking=booking)
+    
+    context = {
+        'form': form,
+        'booking': booking,
+        'passengers': passengers,
+        'billing_infos': billing_infos,
+        'is_agent': is_agent(request.user),
+    }
+    return render(request, 'crm/booking_edit.html', context)
+
+@login_required
+def billing_info(request, booking_pk):
+    booking = get_object_or_404(Booking, pk=booking_pk)
+    
+    if request.method == 'POST':
+        form = BillingInformationForm(request.POST)
+        if form.is_valid():
+            billing_info = form.save(commit=False)
+            billing_info.booking = booking
+            billing_info.save()
+            return redirect(reverse('booking_detail', args=[booking.pk]))
+        else:
+            print(form.errors)
+    else:
+        form = BillingInformationForm()
+
+    return render(request, 'crm/add_billing_info.html', {'form': form, 'booking': booking})
+
+from django.http import HttpResponseForbidden
+
+@login_required
+def booking_delete(request, pk):
+    booking= get_object_or_404(Booking, pk=pk)
+    if request.method == 'POST':
+        booking.delete()
+        return redirect('booking_list')
+    return render(request, 'crm/booking_confirm_delete.html', {'booking': booking})
+    
+# Email Model Routes
+@login_required
+def email_list(request):
+    emails = Email.objects.all()
+    if request.user.groups.filter(name='agent').exists():
+        emails = Email.objects.filter(booking__added_by=request.user)
+    return render(request, 'crm/email_list.html', {'emails': emails})
+
+@login_required
+def create_email(request, booking_id):
+    booking = get_object_or_404(Booking, booking_id=booking_id)
+    if booking.status != 'allocating':
+        return HttpResponseForbidden("Booking must be approved to send an email.")
+    
+    form = EmailForm(initial={
+            'recipient': booking.call_log.email,
+            'subject': f'Booking Confirmation: {booking.booking_id}',
+        })
+    return render(request, 'crm/email_form.html', {'form': form, 'booking': booking})
+
+@login_required
+def email_create(request, booking_id):
+    booking = get_object_or_404(Booking, booking_id=booking_id)
+    billing_info = BillingInformation.objects.filter(booking=booking)
+    if request.method == 'POST':
+        form = EmailForm(request.POST)
+        if form.is_valid():
+            email = form.save(commit=False)
+            email.booking = booking
+            email.save()
+            return redirect('email_list')
+    else:
+        approval_url = request.build_absolute_uri(reverse('approve_booking', args=[booking.booking_id]))
+
+        context = {
+            'booking': booking,
+            'billing_info': billing_info,
+            'approval_url': approval_url,
+            'flight_info_img': booking.flight_info_img.url if booking.flight_info_img else None,
+            'hotel_info_img': booking.hotel_info_img.url if booking.hotel_info_img else None,
+            'vehicle_info_img': booking.vehicle_info_img.url if booking.vehicle_info_img else None,
+        }
+        email_body = render_to_string('email_templates/auth.html', context)
+
+        form = EmailForm(initial={
+            'recipient': booking.call_log.email,
+            'subject': f'Booking Initialization: {booking.booking_id}',
+            'body': email_body
+        })
+        if form.is_valid():
+            email = form.save(commit=False)
+            email.booking = booking
+            email.save()
+            return redirect('email_list')
+    return render(request, 'crm/email_form.html', {'form': form, 'booking': booking})
+
+@login_required
+def email_edit(request, pk):
+    email = get_object_or_404(Email, pk=pk)
+    if request.method == 'POST':
+        form = EmailForm(request.POST, instance=email)
+        if form.is_valid():
+            form.save()
+            return redirect('email_list')
+    else:
+        form = EmailForm(instance=email)
+    return render(request, 'crm/email_form.html', {'form': form, 'email': email})
+
+@login_required
+def email_view(request, pk):
+    email = get_object_or_404(Email, pk=pk)
+    return render(request, 'crm/email_view.html', {'email': email})
+
+@login_required
+@user_passes_test(is_supervisor)
+def email_delete(request, pk):
+    email = get_object_or_404(Email, pk=pk)
+    if request.method == 'POST':
+        email.delete()
+        return redirect('email_list')
+    return render(request, 'crm/email_confirm_delete.html', {'email': email})
+
+from django.core.mail import EmailMessage
+from django.conf import settings
+
+@login_required
+def email_send(request, pk):
+    email = get_object_or_404(Email, pk=pk)
+    booking = email.booking
+
+    try:
+        # Create and send the email
+        msg = EmailMessage(
+            subject=email.subject,
+            body=email.body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email.recipient]
+        )
+        msg.content_subtype = "html" 
+        msg.send()
+
+        email.status = 'sent'
+        email.save()
+    except Exception as e:
+        print(f"Error sending email: {e}")
+    return redirect('email_list')
+
+
+@login_required
+def approve_booking(request, booking_id):
+    booking = get_object_or_404(Booking, booking_id=booking_id)
+    
+    # Update the status of the booking to 'approved'
+    booking.status = 'allocating'
+    booking.save()
+    
+    # Redirect to a confirmation page or a list page
+    return redirect('booking_approved', booking_id=booking.booking_id)
+    

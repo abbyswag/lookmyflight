@@ -1,109 +1,118 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework import generics
-from .models import NewBooking, Booking, BillingInformation
-from .serializers import UserSerializer, NewBookingSerializer, BillingInformationSerializer
-from django.contrib.auth import authenticate
-from .permissions import IsAgentOrReadOnly, IsSupervisor
+from django.http import JsonResponse
+from django.db.models import Q
+from .models import CallLog, Booking, BillingInformation, Passenger
+from django.views.decorators.http import require_http_methods
+from django.contrib.auth.decorators import login_required
+import json
+from datetime import datetime
+from django.core.files.base import ContentFile
+import base64
 
-from rest_framework.decorators import api_view, permission_classes
-from django.contrib.auth.models import Group
-from .serializers import UserSerializer
+def search_customers(request):
+    search_term = request.GET.get('term', '')
+    if len(search_term) < 3:
+        return JsonResponse([], safe=False)
 
-class LoginView(APIView):
-    permission_classes = (AllowAny,)
+    customers = CallLog.objects.filter(
+        Q(name__icontains=search_term) | Q(phone__icontains=search_term)
+    ).values('id', 'name', 'phone', 'email')[:10]  # Limit to 10 results
 
-    def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
-        user = authenticate(request, username=username, password=password)
-        if user:
-            token, _ = Token.objects.get_or_create(user=user)
-            serializer = UserSerializer(user)
-            return Response({'token': token.key, 'user': serializer.data})
-        else:
-            return Response({'error': 'Invalid credentials'}, status=400)
+    return JsonResponse(list(customers), safe=False)
 
-
-# View bookings
-class BookingListView(generics.ListAPIView):
-    queryset = NewBooking.objects.all()
-    serializer_class = NewBookingSerializer
-    permission_classes = [IsAgentOrReadOnly | IsSupervisor]
-
-# View a single NewBooking
-class BookingDetailView(generics.RetrieveAPIView):
-    queryset = NewBooking.objects.all()
-    serializer_class = NewBookingSerializer
-    permission_classes = [IsAgentOrReadOnly | IsSupervisor]
-
-# Create a new NewBooking
-class BookingCreateView(generics.CreateAPIView):
-    queryset = NewBooking.objects.all()
-    serializer_class = NewBookingSerializer
-    permission_classes = [IsAgentOrReadOnly | IsSupervisor]
-
-# Update a NewBooking
-class BookingUpdateView(generics.UpdateAPIView):
-    queryset = NewBooking.objects.all()
-    serializer_class = NewBookingSerializer
-    permission_classes = [IsAgentOrReadOnly | IsSupervisor]
-
-# Delete a NewBooking
-class BookingDeleteView(generics.DestroyAPIView):
-    queryset = NewBooking.objects.all()
-    serializer_class = NewBookingSerializer
-    permission_classes = [IsAgentOrReadOnly | IsSupervisor]
-
-# Create a new billing address
-class BillingInformationCreateView(generics.CreateAPIView):
-    queryset = BillingInformation.objects.all()
-    serializer_class = BillingInformationSerializer
-    permission_classes = [IsAuthenticated]
-
-# View billing address for a specific booking
-class BillingInformationDetailView(generics.RetrieveAPIView):
-    queryset = BillingInformation.objects.all()
-    serializer_class = BillingInformationSerializer
-    lookup_field = 'booking__booking_id'  # Use booking_id as the lookup field
-    permission_classes = [IsAuthenticated]
+@login_required
+@require_http_methods(["POST"])
+def create_booking(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        try:
+            call_log = CallLog.objects.get(id=data['call_log'])
+            booking = Booking.objects.create(
+                added_by=request.user,
+                status='initiated',
+                mco=data['mco'],
+                currency=data['currency'],
+                regarding_flight=data['regarding_flight'],
+                regarding_hotel=data['regarding_hotel'],
+                regarding_vehicle=data['regarding_vehicle'],
+                subcategory=data['subcategory'],
+                call_log=call_log
+            )
+            return JsonResponse({'success': True, 'booking_id': booking.booking_id})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def dashboard_view(request):
-    user = request.user
-    agent_group = Group.objects.get(name='agent')
-    supervisor_group = Group.objects.get(name='supervisor')
+@login_required
+@require_http_methods(["POST"])
+def add_billing_info(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        try:
+            booking = Booking.objects.get(booking_id=data['booking_id'])
+            billing_info = BillingInformation.objects.create(
+                booking=booking,
+                card_type=data['card_type'],
+                card_holder_name=data['card_holder_name'],
+                card_holder_number=data['card_holder_number'],
+                email=data['email'],
+                card_number=data['card_number'],
+                expiry_date=data['expiry_date'],
+                card_cvv=data['card_cvv'],
+                primary_address=data['primary_address'],
+                country=data['country'],
+                zipcode=data['zipcode']
+            )
+            return JsonResponse({'success': True, 'billing_id': billing_info.id})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
-    if agent_group in user.groups.all():
-        # Agent user
-        agent_bookings = NewBooking.objects.filter(added_by=user)
-        completed_bookings = agent_bookings.filter(status='confirmed')
 
-        data = {
-            'user_details': UserSerializer(user).data,
-            'total_bookings': agent_bookings.count(),
-            'completed_bookings': completed_bookings.count(),
-        }
-    elif supervisor_group in user.groups.all():
-        # Supervisor user
-        all_bookings = Booking.objects.all()
-        completed_bookings = all_bookings.filter(status='confirmed')
-        total_price = sum(booking.amount for booking in completed_bookings)
+@login_required
+@require_http_methods(["POST"])
+def add_passengers(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        try:
+            booking = Booking.objects.get(booking_id=data['booking_id'])
+            passengers = data['passengers']
+            
+            for passenger_data in passengers:
+                Passenger.objects.create(
+                    booking=booking,
+                    full_passenger_name=passenger_data['full_passenger_name'],
+                    date_of_birth=datetime.strptime(passenger_data['date_of_birth'], '%Y-%m-%d').date(),
+                    gender=passenger_data['gender'],
+                    ticket_number=passenger_data.get('ticket_number', '')
+                )
+            
+            return JsonResponse({'success': True, 'message': 'Passengers added successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
-        data = {
-            'user_details': UserSerializer(user).data,
-            'total_bookings': all_bookings.count(),
-            'completed_bookings': completed_bookings.count(),
-            'total_price': total_price,
-        }
-    else:
-        # User not in agent or supervisor group
-        data = {
-            'error': 'User group not authorized for this view.'
-        }
 
-    return Response(data)
+@login_required
+@require_http_methods(["POST"])
+def save_booking(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        try:
+            booking = Booking.objects.get(booking_id=data['booking_id'])
+            
+            def save_images(image_data, field):
+                if image_data:
+                    image_data = image_data[0].split(',')[1]  # Remove the data:image/png;base64, part
+                    image = ContentFile(base64.b64decode(image_data), name=f"{field}.png")
+                    setattr(booking, field, image)
+
+            save_images(data.get('flight_info_img'), 'flight_info_img')
+            save_images(data.get('hotel_info_img'), 'hotel_info_img')
+            save_images(data.get('vehicle_info_img'), 'vehicle_info_img')
+            
+            booking.save()
+            return JsonResponse({'success': True, 'booking_id': booking.booking_id})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})

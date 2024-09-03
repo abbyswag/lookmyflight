@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2 class="text-2xl font-bold mb-4">{% if email %}Edit Email{% else %}Create Email{% endif %}</h2>
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+    <a href="{% url 'email_list' %}" class="bg-gray-400 text-white px-4 py-2 rounded ml-2">Cancel</a>
+</form>
+{% endblock %}
