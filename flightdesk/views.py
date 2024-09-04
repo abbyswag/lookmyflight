@@ -62,7 +62,7 @@ def staff_create(request):
         form = StaffCreationForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('staff_list')  # Redirect to a list of staff members
+            return redirect('staff_list')
     else:
         form = StaffCreationForm()
     return render(request, 'crm/staff_form.html', {'form': form})
