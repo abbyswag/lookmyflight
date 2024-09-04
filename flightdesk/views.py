@@ -21,7 +21,7 @@ def login_view(request):
             login(request, user)
             return redirect('dashboard')
         else:
-            return render(request, 'login.html', {'error': 'Invalid credentials'})
+            return render(request, 'crm/login.html', {'error': 'Invalid credentials'})
     return render(request, 'crm/login.html')
 
 def logout_view(request):
