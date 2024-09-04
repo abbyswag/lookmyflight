@@ -298,6 +298,7 @@ def billing_information_create(request):
 # Billing Information Detail View
 @login_required
 def billing_information_detail(request, pk):
+    is_supervisor = user.groups.filter(name='supervisor').exists()
     billing_info = get_object_or_404(BillingInformation, pk=pk)
     user = request.user
     
@@ -312,7 +313,7 @@ def billing_information_detail(request, pk):
     
     context = {
         'billing_info': billing_info,
-        'is_supervisor': is_supervisor(user),
+        'is_supervisor': is_supervisor,
     }
     return render(request, 'crm/billing_information_detail.html', context)
 

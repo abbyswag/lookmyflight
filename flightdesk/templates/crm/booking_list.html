@@ -7,6 +7,7 @@
         <thead>
             <tr>
                 <th class="py-2 px-4 border-b">Booking ID</th>
+                <th class="py-2 px-4 border-b">Customer</th>
                 <th class="py-2 px-4 border-b">Status</th>
                 <th class="py-2 px-4 border-b">Created At</th>
                 <th class="py-2 px-4 border-b">Actions</th>
@@ -16,6 +17,7 @@
             {% for booking in bookings %}
             <tr>
                 <td class="py-2 px-4 border-b">{{ booking.booking_id }}</td>
+                <td class="py-2 px-4 border-b">{{ booking.call_log.name }}</td>
                 <td class="py-2 px-4 border-b">{{ booking.status }}</td>
                 <td class="py-2 px-4 border-b">{{ booking.created_at }}</td>
                 <td class="py-2 px-4 border-b">
