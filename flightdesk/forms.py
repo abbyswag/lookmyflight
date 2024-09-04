@@ -48,7 +48,7 @@ from django_summernote.widgets import SummernoteWidget
 class CallLogForm(forms.ModelForm):
     class Meta:
         model = CallLog
-        fields = ['converted', 'name', 'phone', 'email', 'tag', 'concern']
+        fields = ['converted', 'name', 'phone', 'email', 'tag', 'query_type','concern']
 
 class CampaignForm(forms.ModelForm):
     class Meta:

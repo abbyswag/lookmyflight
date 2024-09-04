@@ -565,7 +565,7 @@ def approve_booking(request, booking_id):
     booking.save()
     
     # Redirect to a confirmation page or a list page
-    return redirect('booking_approved', booking_id=booking.booking_id)
+    return redirect('approve_booking', booking_id=booking.booking_id)
     
 
 from .models import Query

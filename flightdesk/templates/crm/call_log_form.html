@@ -33,6 +33,15 @@
         </div>
 
         <div class="mb-4">
+            <label for="query_type" class="block text-gray-700 text-sm font-bold mb-2">Query Type</label>
+            <select id="query_type" name="query_type" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                {% for choice in form.query_type.field.queryset %}
+                    <option value="{{ choice.id }}" {% if choice.id == form.query_type.value %}selected{% endif %}>{{ choice }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-4">
             <label for="converted" class="block text-gray-700 text-sm font-bold mb-2">Converted</label>
             <select id="converted" name="converted" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
                 {% for choice in form.converted.field.choices %}
