@@ -7,7 +7,7 @@ import json
 from datetime import datetime
 from django.core.files.base import ContentFile
 import base64
-from django.db.models import Count
+from django.db.models import Count, Sum
 from django.utils import timezone
 from datetime import timedelta
 
@@ -203,3 +203,54 @@ def call_log_chart_api(request):
         'data': counts,
     })
 
+@require_GET
+@login_required
+def booking_summary_api(request):
+    filter_type = request.GET.get('filter', 'today')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    tag = request.GET.get('tag')
+    query_type = request.GET.get('query_type')
+
+    today = timezone.now().date()
+    if filter_type == 'today':
+        start_date = today
+        end_date = today
+    elif filter_type == 'lastWeek':
+        start_date = today - timedelta(days=7)
+        end_date = today
+    elif filter_type == 'lastMonth':
+        start_date = today - timedelta(days=30)
+        end_date = today
+    elif filter_type == 'custom':
+        start_date = timezone.datetime.strptime(start_date, "%Y-%m-%d").date()
+        end_date = timezone.datetime.strptime(end_date, "%Y-%m-%d").date()
+
+    bookings = Booking.objects.filter(created_at__date__range=[start_date, end_date])
+
+    if tag:
+        bookings = bookings.filter(call_log__tag__code=tag)
+    if query_type:
+        bookings = bookings.filter(call_log__query_type__code=query_type)
+
+    summary = (
+        bookings.values('added_by__username')
+        .annotate(
+            num_bookings=Count('id'),
+            num_passengers=Count('passenger'),
+            revenue=Sum('mco')
+        )
+        .order_by('-num_bookings')
+    )
+
+    result = [
+        {
+            'agent': item['added_by__username'],
+            'num_bookings': item['num_bookings'],
+            'num_passengers': item['num_passengers'],
+            'revenue': float(item['revenue']) if item['revenue'] else 0
+        }
+        for item in summary
+    ]
+
+    return JsonResponse(result, safe=False)

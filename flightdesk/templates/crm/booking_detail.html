@@ -18,6 +18,11 @@
                 <dt class="text-sm font-medium text-gray-500">Status</dt>
                 <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ booking.status }}</dd>
             </div>
+             <!-- Subcategory -->
+             <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">Subcategory</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ booking.subcategory }}</dd>
+            </div>
             <!-- Currency -->
             <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt class="text-sm font-medium text-gray-500">Currency</dt>
@@ -29,24 +34,26 @@
                 <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ booking.mco }}</dd>
             </div>
             <!-- Regarding Flight -->
-            <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt class="text-sm font-medium text-gray-500">Regarding Flight</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ booking.regarding_flight|yesno:"Yes,No" }}</dd>
+            <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-4 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500 sm:col-span-1">Regarding Flight</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-1">{{ booking.regarding_flight|yesno:"Yes,No" }}</dd>
+                <dt class="text-sm font-medium text-gray-500 sm:col-span-1">Flight Cost</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-1">{{ booking.flight_cost }}</dd>
             </div>
             <!-- Regarding Hotel -->
-            <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt class="text-sm font-medium text-gray-500">Regarding Hotel</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ booking.regarding_hotel|yesno:"Yes,No" }}</dd>
+            <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-4 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500 sm:col-span-1">Regarding Hotel</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-1">{{ booking.regarding_hotel|yesno:"Yes,No" }}</dd>
+                <dt class="text-sm font-medium text-gray-500 sm:col-span-1">Hotel Cost</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-1">{{ booking.hotel_cost }}</dd>
             </div>
+
             <!-- Regarding Vehicle -->
-            <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt class="text-sm font-medium text-gray-500">Regarding Vehicle</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ booking.regarding_vehicle|yesno:"Yes,No" }}</dd>
-            </div>
-            <!-- Subcategory -->
-            <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt class="text-sm font-medium text-gray-500">Subcategory</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ booking.subcategory }}</dd>
+            <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-4 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500 sm:col-span-1">Regarding Vehicle</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-1">{{ booking.regarding_vehicle|yesno:"Yes,No" }}</dd>
+                <dt class="text-sm font-medium text-gray-500 sm:col-span-1">Vehicle Cost</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-1">{{ booking.vehicle_cost }}</dd>
             </div>
         </dl>
     </div>
@@ -156,9 +163,16 @@
         </dl>
         {% endfor %}
     </div>
-    <a href="{% url 'billing_info' booking.pk %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-        Add New Card Information
-    </a>
+    <div class="flex justify-between items-center px-4 py-4 sm:px-6">
+        <a href="{% url 'billing_info' booking.pk %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Add New Card Information
+        </a>
+        {% if user.is_supervisor %}
+        <a href="{% url 'payment_done' booking.booking_id %}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+            Payment Done
+        </a>
+        {% endif %}
+    </div>
 </div>
 
 <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-8">

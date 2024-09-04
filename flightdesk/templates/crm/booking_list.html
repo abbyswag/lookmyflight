@@ -22,6 +22,9 @@
                     <a href="{% url 'booking_detail' booking.pk %}" class="text-blue-600 hover:underline">View</a>
                     <a href="{% url 'booking_edit' booking.pk %}" class="ml-2 text-green-600 hover:underline">Edit</a>
                     <a href="{% url 'booking_delete' booking.pk %}" class="text-red-600 hover:underline">Delete</a>
+                    {% if booking.status == 'confirmed' %}
+                        <a href="{% url 'create_email' booking.booking_id %}" class="ml-2 text-purple-600 hover:underline">Mail</a>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}

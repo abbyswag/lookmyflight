@@ -17,6 +17,8 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
     path('api/call-log-summary/', api.call_log_summary_api, name='call_log_summary_api'),
     path('api/call-log-chart/', api.call_log_chart_api, name='call_log_chart_api'),
+    path('api/booking-summary/', api.booking_summary_api, name='booking_summary_api'),
+
 
     # Staff
     path('staff/create/', views.staff_create, name='staff_create'),
@@ -43,6 +45,7 @@ urlpatterns = [
     path('queries/<int:pk>/delete/', views.query_delete, name='query_delete'),
 
     path('billing/', views.billing_information_list, name='billing_information_list'),
+    path('payment/<str:booking_id>/', views.payment_done, name='payment_done'),
     path('billing/add/', views.billing_information_create, name='billing_information_create'),
     path('billing/<int:pk>/', views.billing_information_detail ,name='billing_information_detail'),
     path('billing/<int:pk>/edit/', views.billing_information_update, name='billing_information_update'),
@@ -60,6 +63,7 @@ urlpatterns = [
     path('api/add-passengers/', api.add_passengers, name='add_passengers'),
 
     path('emails/', views.email_list, name='email_list'),
+    path('emails/c/<str:booking_id>/', views.create_email, name='create_email'),
     path('emails/create/<str:booking_id>/', views.email_create, name='email_create'),
     path('emails/<int:pk>/edit/', views.email_edit, name='email_edit'),
     path('emails/<int:pk>/view/', views.email_view, name='email_view'),

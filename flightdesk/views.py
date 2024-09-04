@@ -412,6 +412,27 @@ def billing_info(request, booking_pk):
 
     return render(request, 'crm/add_billing_info.html', {'form': form, 'booking': booking})
 
+from django.contrib import messages
+
+@login_required
+@user_passes_test(is_supervisor)
+def payment_done(request, booking_id):
+    booking = get_object_or_404(Booking, booking_id=booking_id)
+    
+    # Check if the booking is in a state where payment can be made
+    if booking.status == 'allocating':
+        messages.error(request, "Invalid booking status for payment completion.")
+        return redirect('booking_detail', pk=booking.pk)
+    
+    # Update the booking status to confirmed
+    booking.status = 'confirmed'
+    booking.save()
+    
+    messages.success(request, f"Payment for booking {booking_id} has been confirmed.")
+    
+    # Redirect back to the booking detail page
+    return redirect('booking_detail', pk=booking.pk)
+
 from django.http import HttpResponseForbidden
 
 @login_required
@@ -433,12 +454,14 @@ def email_list(request):
 @login_required
 def create_email(request, booking_id):
     booking = get_object_or_404(Booking, booking_id=booking_id)
-    if booking.status == "confirmed" or booking.status == "cleared":
-        return HttpResponseForbidden("Booking must be approved to send an email.")
-    
+    context = {
+        'booking': booking
+    }
+    email_body = render_to_string('email_templates/conf.html', context)
     form = EmailForm(initial={
             'recipient': booking.call_log.email,
             'subject': f'Booking Confirmation: {booking.booking_id}',
+            'body': email_body,
         })
     return render(request, 'crm/email_form.html', {'form': form, 'booking': booking})
 
