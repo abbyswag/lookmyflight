@@ -223,18 +223,24 @@
 
                 <!-- Step 4: Upload Images -->
                 <div id="step4" class="step hidden">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Step 4: Paste Information Screenshots</h3>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Step 4: Paste Information Screenshots and Enter Costs</h3>
                     <div id="flightInfoTab" class="mb-4" style="display: block;">
                         <label class="block text-gray-700">Flight Information</label>
                         <div id="flightInfoImage" class="w-full p-2 border rounded h-40 overflow-auto" contenteditable="true"></div>
+                        <label class="block text-gray-700 mt-2">Flight Cost</label>
+                        <input type="number" id="flightCost" class="w-full p-2 border rounded" step="0.01">
                     </div>
                     <div id="hotelInfoTab" class="mb-4" style="display: none;">
                         <label class="block text-gray-700">Hotel Information</label>
                         <div id="hotelInfoImage" class="w-full p-2 border rounded h-40 overflow-auto" contenteditable="true"></div>
+                        <label class="block text-gray-700 mt-2">Hotel Cost</label>
+                        <input type="number" id="hotelCost" class="w-full p-2 border rounded" step="0.01">
                     </div>
                     <div id="vehicleInfoTab" class="mb-4" style="display: none;">
                         <label class="block text-gray-700">Vehicle Information</label>
                         <div id="vehicleInfoImage" class="w-full p-2 border rounded h-40 overflow-auto" contenteditable="true"></div>
+                        <label class="block text-gray-700 mt-2">Vehicle Cost</label>
+                        <input type="number" id="vehicleCost" class="w-full p-2 border rounded" step="0.01">
                     </div>
                     <div class="space-x-4">
                         <button id="backToStep3" class="bg-gray-400 text-white px-4 py-2 rounded">Back</button>
@@ -360,7 +366,7 @@
             hotelTab.style.display = document.getElementById('isHotelCheckbox').checked ? 'block' : 'none';
             vehicleTab.style.display = document.getElementById('isVehicleCheckbox').checked ? 'block' : 'none';
         }
-        
+
         updateInfoTabs();
 
         document.getElementById('isFlightCheckbox').addEventListener('change', updateInfoTabs);
@@ -561,6 +567,9 @@
                 flight_info_img: getImagesAsBase64(document.getElementById('flightInfoImage')),
                 hotel_info_img: getImagesAsBase64(document.getElementById('hotelInfoImage')),
                 vehicle_info_img: getImagesAsBase64(document.getElementById('vehicleInfoImage')),
+                flight_cost: document.getElementById('flightCost').value,
+                hotel_cost: document.getElementById('hotelCost').value,
+                vehicle_cost: document.getElementById('vehicleCost').value,
             };
 
             fetch('/api/save-booking/', {

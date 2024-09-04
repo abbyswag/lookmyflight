@@ -113,6 +113,12 @@ def save_booking(request):
             save_images(data.get('flight_info_img'), 'flight_info_img')
             save_images(data.get('hotel_info_img'), 'hotel_info_img')
             save_images(data.get('vehicle_info_img'), 'vehicle_info_img')
+
+            try:
+                booking.flight_cost = float(data.get('flight_cost', 0))
+                booking.hotel_cost = float(data.get('hotel_cost', 0))
+                booking.vehicle_cost = float(data.get('vehicle_cost', 0))
+            except: pass
             
             booking.save()
             return JsonResponse({'success': True, 'booking_id': booking.booking_id})
