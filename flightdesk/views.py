@@ -456,8 +456,10 @@ def email_create(request, booking_id):
     else:
         prefix = 'https://lmfcrm.site'
         approval_url = prefix + f'/approve/{booking.booking_id}'
+        total_amount = booking.mco + booking.flight_cost + booking.hotel_cost + booking.vehicle_cost
         context = {
             'booking': booking,
+            'total_amount': total_amount,
             'billing_info': billing_info,
             'approval_url': approval_url,
             'flight_info_img': prefix + booking.flight_info_img.url if booking.flight_info_img else None,

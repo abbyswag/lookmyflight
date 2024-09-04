@@ -6,7 +6,9 @@
 <div>
   <h2 style="text-align: center;">Please Confirm This Booking</h2>
   <p style="text-align: center;">
-  I, {{card_holder_name}} has authorize LOOKMYFLIGHT to confirm my booking by charging my Credit/Debit card, ending with <b>{{card_number}}</b> for amount ({{booking.currency}} <b>{{booking.amount}}</b>) to book the below itinerary.
+  {% for b in billing_info %}
+  I, {{b.card_holder_name}} has authorize LOOKMYFLIGHT to confirm my booking by charging my Credit/Debit card, ending with <b>{{b.card_number|slice:":4"}}</b> for amount ({{booking.currency}} <b>{{total_amount}}</b>) to book the below itinerary.
+  {% endfor %}  
   </p>
   <p style="text-align: center;">
   Reservations once issued are Non Refundable and Non Transferable. Changes are subject to airline rules and regulations and may attract penalty and difference in fare and fees. Some reservations may completely be NON CHANGEABLE even with airline penalty.No airfare is guaranteed until tickets are issued.
@@ -22,15 +24,15 @@
 </div>
 <br>
 <div>
-  <h2 class="highlited">Hotel Details</h2>
   {% if hotel_info_img %}
+  <h2 class="highlited">Hotel Details</h2>
     <img src="{{ hotel_info_img }}" alt="Hotel Information" style="width: 100%; max-width: 600px;">
   {% endif %}
 </div>
 <br>
 <div>
-  <h2 class="highlited">Vehicle Details</h2>
   {% if vehicle_info_img %}
+  <h2 class="highlited">Vehicle Details</h2>
     <img src="{{ vehicle_info_img }}" alt="Vehicle Information" style="width: 100%; max-width: 600px;">
   {% endif %}
 </div>
@@ -41,9 +43,31 @@
   <h2 class="highlited">Price Details</h2>
   <table width="100%" border="1" cellpadding="5" cellspacing="0">
     <thead>
+      {% if flight_info_img %}
+      <tr>
+        <td colspan="3"><strong>Flight Cost</strong></td>
+        <td>{{booking.flight_cost}}</td>
+      </tr>
+      {% endif %}
+      {% if hotel_info_img %}
+      <tr>
+        <td colspan="3"><strong>Hotel Cost</strong></td>
+        <td>{{booking.hotel_cost}}</td>
+      </tr>
+      {% endif %}
+      {% if vehicle_info_img %}
+      <tr>
+        <td colspan="3"><strong>Car Cost</strong></td>
+        <td>{{booking.vehicle_cost}}</td>
+      </tr>
+      {% endif %}
+      <tr>
+        <td colspan="3"><strong>Tax & Fees</strong></td>
+        <td>{{booking.mco}}</td>
+      </tr>
       <tr bgcolor="#FFFFCC">
         <td colspan="3"><strong>Total Flight Booking Amount (Including Taxes and Fees):</strong></td>
-        <td><strong>{{booking.currency}} {{ booking.amount }}</strong></td>
+        <td><strong>{{booking.currency}} {{ total_amount }}</strong></td>
       </tr>
     </tbody>
   </table>
@@ -77,7 +101,7 @@
       {% endfor %}
       <tr bgcolor="#FFFFCC">
         <td colspan="3"><strong>Total Amount Charged:</strong></td>
-        <td><strong>{{ booking.currency }} {{ booking.mco }}</strong></td>
+        <td><strong>{{ booking.currency }} {{ total_amount }}</strong></td>
       </tr>
     </tbody>
   </table>
