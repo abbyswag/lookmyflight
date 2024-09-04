@@ -32,40 +32,18 @@ def logout_view(request):
 # Dashboard View
 @login_required
 def dashboard(request):
-    is_supervisor = request.user.groups.filter(name='supervisor').exists()
+    user = request.user
+    is_supervisor = user.groups.filter(name='supervisor').exists()
 
-    # Default filter: Total calls by date
-    filter_type = request.GET.get('filter', 'total')
-    labels, data = '', ''
-    today = timezone.now().date()
-    start_date = today - timedelta(days=30)  # Last 30 days
-    queryset = CallLog.objects.filter(call_date__date__gte=start_date)
-
-    if filter_type == 'tags':
-        chart_data = queryset.values('tag__code').annotate(call_count=Count('id')).order_by('tag__code')
-        labels = [entry['tag__code'] for entry in chart_data]
-        data = [entry['call_count'] for entry in chart_data]
-    elif filter_type == 'conversion':
-        chart_data = queryset.values('converted').annotate(call_count=Count('id')).order_by('converted')
-        labels = [entry['converted'] for entry in chart_data]
-        data = [entry['call_count'] for entry in chart_data]
-    else:
-        queryset = CallLog.objects.all()
-        chart_data = queryset.annotate(
-            date_only=TruncDate('call_date')
-        ).values('date_only').annotate(
-            call_count=Count('id')
-        ).order_by('date_only')
-        
-        labels = [entry['date_only'].strftime('%Y-%m-%d') for entry in chart_data]
-        data = [entry['call_count'] for entry in chart_data]
+    tags = Campaign.objects.all()
+    query_types = Query.objects.all()
 
     context = {
         'is_supervisor': is_supervisor,
-        'labels': labels,
-        'data': data,
-        'filter_type': filter_type,
+        'tags': tags,
+        'query_types': query_types,
     }
+
     return render(request, 'crm/dashboard.html', context)
 
 # Check for Supervisor Group
@@ -101,7 +79,7 @@ def staff_list(request):
 @login_required
 def call_log_list(request):
     user = request.user
-    is_supervisor = user.groups.filter(name='Supervisor').exists()
+    is_supervisor = user.groups.filter(name='supervisor').exists()
     
     # Initialize filter parameters
     date = request.GET.get('date', None)
@@ -476,16 +454,17 @@ def email_create(request, booking_id):
             email.save()
             return redirect('email_list')
     else:
-        approval_url = request.build_absolute_uri(reverse('approve_booking', args=[booking.booking_id]))
-
+        prefix = 'https://lmfcrm.site'
+        approval_url = prefix + f'/approve/{booking.booking_id}'
         context = {
             'booking': booking,
             'billing_info': billing_info,
             'approval_url': approval_url,
-            'flight_info_img': booking.flight_info_img.url if booking.flight_info_img else None,
-            'hotel_info_img': booking.hotel_info_img.url if booking.hotel_info_img else None,
-            'vehicle_info_img': booking.vehicle_info_img.url if booking.vehicle_info_img else None,
+            'flight_info_img': prefix + booking.flight_info_img.url if booking.flight_info_img else None,
+            'hotel_info_img': prefix + booking.hotel_info_img.url if booking.hotel_info_img else None,
+            'vehicle_info_img': prefix + booking.vehicle_info_img.url if booking.vehicle_info_img else None,
         }
+        print(booking.flight_info_img.url)
         email_body = render_to_string('email_templates/auth.html', context)
 
         form = EmailForm(initial={
@@ -563,3 +542,53 @@ def approve_booking(request, booking_id):
     # Redirect to a confirmation page or a list page
     return redirect('booking_approved', booking_id=booking.booking_id)
     
+
+from .models import Query
+from .forms import QueryForm
+
+# Query Views
+@login_required
+@user_passes_test(is_supervisor)
+def query_list(request):
+    queries = Query.objects.all()
+    return render(request, 'crm/query_list.html', {'queries': queries})
+
+@login_required
+@user_passes_test(is_supervisor)
+def query_create(request):
+    if request.method == 'POST':
+        form = QueryForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('query_list')
+    else:
+        form = QueryForm()
+    return render(request, 'crm/query_form.html', {'form': form})
+
+@login_required
+@user_passes_test(is_supervisor)
+def query_detail(request, pk):
+    query = get_object_or_404(Query, pk=pk)
+    return render(request, 'crm/query_detail.html', {'query': query})
+
+@login_required
+@user_passes_test(is_supervisor)
+def query_update(request, pk):
+    query = get_object_or_404(Query, pk=pk)
+    if request.method == 'POST':
+        form = QueryForm(request.POST, instance=query)
+        if form.is_valid():
+            form.save()
+            return redirect('query_detail', pk=pk)
+    else:
+        form = QueryForm(instance=query)
+    return render(request, 'crm/query_form.html', {'form': form, 'query': query})
+
+@login_required
+@user_passes_test(is_supervisor)
+def query_delete(request, pk):
+    query = get_object_or_404(Query, pk=pk)
+    if request.method == 'POST':
+        query.delete()
+        return redirect('query_list')
+    return render(request, 'crm/query_confirm_delete.html', {'query': query})

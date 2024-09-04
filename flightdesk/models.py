@@ -35,6 +35,11 @@ class Campaign(models.Model):
     def __str__(self):
         return self.code
 
+class Query(models.Model):
+    code = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return self.code
 
 # Calllog Model
 class CallLog(models.Model):
@@ -58,6 +63,7 @@ class CallLog(models.Model):
     email = models.EmailField(blank=True)
     call_date = models.DateTimeField(auto_now_add=True)
     tag = models.ForeignKey(Campaign, on_delete=models.SET_NULL, null=True, blank=True)
+    query_type = models.ForeignKey(Query, on_delete=models.SET_NULL, null=True, blank=True)
     concern = models.TextField(blank=True)
 
     def __str__(self):

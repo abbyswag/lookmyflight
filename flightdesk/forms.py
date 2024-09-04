@@ -40,7 +40,7 @@
 
 
 from django import forms
-from .models import CallLog, Campaign, BillingInformation, Booking, Email
+from .models import CallLog, Campaign, BillingInformation, Booking, Email, Query
 from django.contrib.auth.models import User, Group
 from django.core.exceptions import ValidationError
 from django_summernote.widgets import SummernoteWidget
@@ -141,3 +141,8 @@ class EmailForm(forms.ModelForm):
         widgets = {
             'body': SummernoteWidget(),
         }
+
+class QueryForm(forms.ModelForm):
+    class Meta:
+        model = Query
+        fields = ['code']

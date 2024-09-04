@@ -15,6 +15,8 @@ urlpatterns = [
 
     # Dashboard
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('api/call-log-summary/', api.call_log_summary_api, name='call_log_summary_api'),
+    path('api/call-log-chart/', api.call_log_chart_api, name='call_log_chart_api'),
 
     # Staff
     path('staff/create/', views.staff_create, name='staff_create'),
@@ -33,6 +35,12 @@ urlpatterns = [
     path('campaigns/<int:id>/', views.campaign_detail, name='campaign_detail'),
     path('campaigns/<int:id>/edit/', views.campaign_update, name='campaign_edit'),
     path('campaigns/<int:id>/delete/', views.campaign_delete, name='campaign_delete'),
+
+    path('queries/', views.query_list, name='query_list'),
+    path('queries/create/', views.query_create, name='query_create'),
+    path('queries/<int:pk>/', views.query_detail, name='query_detail'),
+    path('queries/<int:pk>/update/', views.query_update, name='query_update'),
+    path('queries/<int:pk>/delete/', views.query_delete, name='query_delete'),
 
     path('billing/', views.billing_information_list, name='billing_information_list'),
     path('billing/add/', views.billing_information_create, name='billing_information_create'),

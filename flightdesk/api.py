@@ -1,12 +1,15 @@
 from django.http import JsonResponse
 from django.db.models import Q
-from .models import CallLog, Booking, BillingInformation, Passenger
-from django.views.decorators.http import require_http_methods
+from .models import CallLog, Booking, BillingInformation, Passenger, Campaign, Query
+from django.views.decorators.http import require_http_methods, require_GET
 from django.contrib.auth.decorators import login_required
 import json
 from datetime import datetime
 from django.core.files.base import ContentFile
 import base64
+from django.db.models import Count
+from django.utils import timezone
+from datetime import timedelta
 
 def search_customers(request):
     search_term = request.GET.get('term', '')
@@ -116,3 +119,81 @@ def save_booking(request):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+
+@require_GET
+def call_log_summary_api(request):
+    filter_type = request.GET.get('filter', 'today')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    today = timezone.now().date()
+    if filter_type == 'today':
+        start_date = today
+        end_date = today
+    elif filter_type == 'lastWeek':
+        start_date = today - timedelta(days=7)
+        end_date = today
+    elif filter_type == 'lastMonth':
+        start_date = today - timedelta(days=30)
+        end_date = today
+    elif filter_type == 'custom':
+        start_date = timezone.datetime.strptime(start_date, "%Y-%m-%d").date()
+        end_date = timezone.datetime.strptime(end_date, "%Y-%m-%d").date()
+
+    tags = Campaign.objects.all()
+    query_types = Query.objects.all()
+
+    call_logs = CallLog.objects.filter(call_date__date__range=[start_date, end_date])
+
+    call_log_counts = {}
+    for tag in tags:
+        call_log_counts[tag.code] = {}
+        for query_type in query_types:
+            count = call_logs.filter(tag=tag, query_type=query_type).count()
+            call_log_counts[tag.code][query_type.code] = count
+        call_log_counts[tag.code]['total'] = sum(call_log_counts[tag.code].values())
+
+    return JsonResponse({
+        'call_log_counts': call_log_counts,
+        'tags': [tag.code for tag in tags],
+        'query_types': [query_type.code for query_type in query_types],
+    })
+
+@require_GET
+def call_log_chart_api(request):
+    chart_type = request.GET.get('type', 'tag')
+    filter_type = request.GET.get('filter', 'today')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    today = timezone.now().date()
+    if filter_type == 'today':
+        start_date = today
+        end_date = today
+    elif filter_type == 'lastWeek':
+        start_date = today - timedelta(days=7)
+        end_date = today
+    elif filter_type == 'lastMonth':
+        start_date = today - timedelta(days=30)
+        end_date = today
+    elif filter_type == 'custom':
+        start_date = timezone.datetime.strptime(start_date, "%Y-%m-%d").date()
+        end_date = timezone.datetime.strptime(end_date, "%Y-%m-%d").date()
+
+    call_logs = CallLog.objects.filter(call_date__date__range=[start_date, end_date])
+
+    if chart_type == 'tag':
+        data = call_logs.values('tag__code').annotate(count=Count('id'))
+        labels = [item['tag__code'] for item in data]
+        counts = [item['count'] for item in data]
+    else:  # query_type
+        data = call_logs.values('query_type__code').annotate(count=Count('id'))
+        labels = [item['query_type__code'] for item in data]
+        counts = [item['count'] for item in data]
+
+    return JsonResponse({
+        'labels': labels,
+        'data': counts,
+    })
+

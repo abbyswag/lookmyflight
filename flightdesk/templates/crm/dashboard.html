@@ -10,14 +10,13 @@
         <p class="text-gray-600 mt-2">Here is your dashboard overview.</p>
     </div>
 
+    {% if is_supervisor %}
     <!-- Call Logs Overview Card -->
     <div class="bg-white p-6 rounded-lg shadow-lg">
-        <h3 class="text-xl font-semibold text-gray-800">Call Logs</h3>
-        <p class="text-gray-600 mt-2">You have <span class="font-bold">{{ call_logs_count }}</span> call logs recorded.</p>
-        <a href="{% url 'call_log_list' %}" class="text-blue-600 hover:underline mt-4 inline-block">View Call Logs</a>
+        <h3 class="text-xl font-semibold text-gray-800">Query Type</h3>
+        <p class="text-gray-600 mt-2">Manage your Query type effectively.</p>
+        <a href="{% url 'query_list' %}" class="text-blue-600 hover:underline mt-4 inline-block">View Query Type</a>
     </div>
-
-    {% if is_supervisor %}
     <!-- Campaigns Overview Card (For Supervisors) -->
     <div class="bg-white p-6 rounded-lg shadow-lg">
         <h3 class="text-xl font-semibold text-gray-800">Campaigns</h3>
@@ -27,18 +26,44 @@
     {% endif %}
 
     {% if is_supervisor %}
-    <div class="bg-white p-6 rounded-lg shadow-lg mb-6 col-span-1 md:col-span-2">
-        <h3 class="text-xl font-semibold text-gray-800">Call Log Summary</h3>
-
-        <div class="flex justify-end space-x-4 mt-4">
-            <a href="?filter=total" class="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 {% if filter_type == 'total' %}bg-blue-800{% endif %}">Total</a>
-            <a href="?filter=tags" class="bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700 {% if filter_type == 'tags' %}bg-green-800{% endif %}">By Tags</a>
-            <a href="?filter=conversion" class="bg-purple-600 text-white font-bold py-2 px-4 rounded hover:bg-purple-700 {% if filter_type == 'conversion' %}bg-purple-800{% endif %}">By Conversion</a>
+    <div class="bg-white p-6 rounded-lg shadow-lg mb-6 col-span-1 md:col-span-3">
+        <h3 class="text-2xl font-semibold text-gray-800 mb-4">Call Log Summary</h3>
+    
+        <!-- Date Filter -->
+        <div class="mb-6">
+            <label for="dateFilter" class="block text-sm font-medium text-gray-700 mb-2">Filter by Date:</label>
+            <select id="dateFilter" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <option value="today">Today</option>
+                <option value="lastWeek">Last Week</option>
+                <option value="lastMonth">Last Month</option>
+                <option value="custom">Custom Date Range</option>
+            </select>
+            <div id="customDateRange" class="mt-3 hidden">
+                <input type="date" id="startDate" class="mr-2 py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <input type="date" id="endDate" class="py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            </div>
         </div>
-
-        <canvas id="callLogChart" class="mt-6"></canvas>
+    
+        <div class="flex flex-col lg:flex-row">
+            <!-- Table -->
+            <div id="tableContainer" class="lg:w-2/3 overflow-x-auto">
+                <!-- Table content will be dynamically updated here -->
+            </div>
+    
+            <!-- Pie Chart -->
+            <div class="lg:w-1/4 mt-6 lg:mt-0 ml-6">
+                <div class="mb-4">
+                    <!-- <label for="chartFilter" class="block text-sm font-medium text-gray-700 mb-2">Chart View:</label> -->
+                    <select id="chartFilter" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <option value="tag">By Tag</option>
+                        <option value="queryType">By Query Type</option>
+                    </select>
+                </div>
+                <canvas id="callLogPieChart"></canvas>
+            </div>
+        </div>
     </div>
-    {% endif %}
+    {% endif %}    
 
 </div>
 
@@ -63,30 +88,113 @@
 {% endblock %}
 
 {% block scripts %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const labels = {{ labels|safe }};
-    const data = {{ data|safe }};
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateFilter = document.getElementById('dateFilter');
+        const customDateRange = document.getElementById('customDateRange');
+        const chartFilter = document.getElementById('chartFilter');
+        const ctx = document.getElementById('callLogPieChart').getContext('2d');
 
-    const ctx = document.getElementById('callLogChart').getContext('2d');
-    const callLogChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Number of Calls',
-                data: data,
-                backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
+        let pieChart;
+
+        dateFilter.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                customDateRange.classList.remove('hidden');
+            } else {
+                customDateRange.classList.add('hidden');
             }
+            updateData();
+        });
+
+        chartFilter.addEventListener('change', updateChart);
+
+        function updateData() {
+            const filterValue = dateFilter.value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            fetch(`/api/call-log-summary/?filter=${filterValue}&start_date=${startDate}&end_date=${endDate}`)
+                .then(response => response.json())
+                .then(data => {
+                    updateTable(data);
+                    updateChart();
+                });
         }
+
+        function updateTable(data) {
+            const tableContainer = document.getElementById('tableContainer');
+            let tableHTML = `
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tag</th>
+                            ${data.query_types.map(qt => `<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${qt}</th>`).join('')}
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${data.tags.map(tag => `
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${tag}</td>
+                                ${data.query_types.map(qt => `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.call_log_counts[tag][qt] || 0}</td>`).join('')}
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.call_log_counts[tag]['total'] || 0}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            tableContainer.innerHTML = tableHTML;
+        }
+
+        function updateChart() {
+            const chartType = chartFilter.value;
+            const filterValue = dateFilter.value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            fetch(`/api/call-log-chart/?type=${chartType}&filter=${filterValue}&start_date=${startDate}&end_date=${endDate}`)
+                .then(response => response.json())
+                .then(data => {
+                    pieChart.data.labels = data.labels;
+                    pieChart.data.datasets[0].data = data.data;
+                    pieChart.update();
+                });
+        }
+
+        function initChart() {
+            pieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+                        ],
+                        hoverBackgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Call Log Distribution'
+                        }
+                    }
+                }
+            });
+        }
+
+        initChart();
+        updateData(); // Initial data load
     });
 </script>
 {% endblock %}
