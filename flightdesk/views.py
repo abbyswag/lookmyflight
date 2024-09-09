@@ -348,7 +348,7 @@ def booking_list(request):
         bookings = Booking.objects.filter(added_by=request.user)
     else:
         bookings = Booking.objects.all()
-    return render(request, 'crm/booking_list.html', {'bookings': bookings})
+    return render(request, 'crm/booking_list.html', {'bookings': bookings, 'is_supervisor': is_supervisor(request.user)})
 
 @login_required
 def booking_detail(request, pk):
@@ -366,6 +366,7 @@ def booking_detail(request, pk):
         'billing_infos': billing_infos,
         'emails': emails, 
         'is_agent': is_agent(request.user),
+        'is_supervisor': is_supervisor(request.user),
     }
     return render(request, 'crm/booking_detail.html', context)
 
@@ -490,7 +491,6 @@ def email_create(request, booking_id):
             'hotel_info_img': prefix + booking.hotel_info_img.url if booking.hotel_info_img else None,
             'vehicle_info_img': prefix + booking.vehicle_info_img.url if booking.vehicle_info_img else None,
         }
-        print(booking.flight_info_img.url)
         email_body = render_to_string('email_templates/auth.html', context)
 
         form = EmailForm(initial={
