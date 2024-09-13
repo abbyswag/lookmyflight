@@ -38,6 +38,44 @@
 </div>
 <br>
 
+
+<!-- Passengers Information -->
+<div>
+  <h2 class="highlited">Passengers Information</h2>
+  <table width="100%" border="1" cellpadding="5" cellspacing="0">
+    <thead>
+      <tr>
+        <th>Full Name</th>
+        <th>Date of Birth</th>
+        <th>Gender</th>
+        <th>Ticket Number</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for passenger in passenger_info %}
+      <tr style="text-align: center;">
+        <td>{{ passenger.full_passenger_name }}</td>
+        <td>{{ passenger.date_of_birth }}</td>
+        <td>{{ passenger.get_gender_display }}</td>
+        <td>
+          {% if passenger.ticket_number %}
+            {{ passenger.ticket_number }}
+          {% else %}
+            N/A
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4">No passengers information available.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<br>
+
+
 <!-- price details -->
 <div>
   <h2 class="highlited">Price Details</h2>

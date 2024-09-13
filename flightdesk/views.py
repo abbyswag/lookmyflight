@@ -471,6 +471,7 @@ def create_email(request, booking_id):
 def email_create(request, booking_id):
     booking = get_object_or_404(Booking, booking_id=booking_id)
     billing_info = BillingInformation.objects.filter(booking=booking)
+    passenger_info = Passenger.objects.filter(booking = booking)
     if request.method == 'POST':
         form = EmailForm(request.POST)
         if form.is_valid():
@@ -481,11 +482,12 @@ def email_create(request, booking_id):
     else:
         prefix = 'https://lmfcrm.site'
         approval_url = prefix + f'/approve/{booking.booking_id}'
-        total_amount = booking.mco + booking.flight_cost + booking.hotel_cost + booking.vehicle_cost
+        total_amount = round(booking.mco + booking.flight_cost + booking.hotel_cost + booking.vehicle_cost, 2)
         context = {
             'booking': booking,
             'total_amount': total_amount,
             'billing_info': billing_info,
+            'passenger_info':passenger_info,
             'approval_url': approval_url,
             'flight_info_img': prefix + booking.flight_info_img.url if booking.flight_info_img else None,
             'hotel_info_img': prefix + booking.hotel_info_img.url if booking.hotel_info_img else None,
