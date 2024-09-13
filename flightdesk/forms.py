@@ -44,6 +44,7 @@ from .models import CallLog, Campaign, BillingInformation, Booking, Email, Query
 from django.contrib.auth.models import User, Group
 from django.core.exceptions import ValidationError
 from django_summernote.widgets import SummernoteWidget
+from bs4 import BeautifulSoup
 
 class CallLogForm(forms.ModelForm):
     class Meta:
@@ -141,6 +142,17 @@ class EmailForm(forms.ModelForm):
         widgets = {
             'body': SummernoteWidget(),
         }
+
+    def clean_body(self):
+        body = self.cleaned_data.get('body', '')
+        soup = BeautifulSoup(body, 'html.parser')
+        
+        for img in soup.find_all('img'):
+            src = img.get('src')
+            if src.startswith('/media/'):
+                img['src'] = f'https://lmfcrm.site{src}'
+        
+        return str(soup)
 
 class QueryForm(forms.ModelForm):
     class Meta:
