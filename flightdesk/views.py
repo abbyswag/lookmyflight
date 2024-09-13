@@ -482,7 +482,15 @@ def email_create(request, booking_id):
     else:
         prefix = 'https://lmfcrm.site'
         approval_url = prefix + f'/approve/{booking.booking_id}'
-        total_amount = round(booking.mco + booking.flight_cost + booking.hotel_cost + booking.vehicle_cost, 2)
+        total_amount = str(booking.mco + booking.flight_cost + booking.hotel_cost + booking.vehicle_cost)
+        
+        if '.' in total_amount:
+            integer_part, decimal_part = total_amount.split('.')
+            if len(decimal_part) == 1:
+                total_amount = f"{integer_part}.{decimal_part}0"
+        else:
+            total_amount = f"{total_amount}.00"      
+
         context = {
             'booking': booking,
             'total_amount': total_amount,
