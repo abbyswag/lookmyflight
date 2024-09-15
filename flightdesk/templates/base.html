@@ -198,7 +198,7 @@
                         </div>
                     </form>
                     <div class="space-x-4 mt-4">
-                        <button id="backToStep1" class="bg-gray-400 text-white px-4 py-2 rounded">Back</button>
+                        <!-- <button id="backToStep1" class="bg-gray-400 text-white px-4 py-2 rounded">Back</button> -->
                         <button id="nextToStep3" class="bg-blue-600 text-white px-4 py-2 rounded">Next</button>
                     </div>
                 </div>                
@@ -211,7 +211,7 @@
                     </div>
                     <button id="addPassenger" class="bg-green-600 text-white px-4 py-2 rounded mb-4">+ Add Passenger</button>
                     <div class="space-x-4">
-                        <button id="backToStep2" class="bg-gray-400 text-white px-4 py-2 rounded">Back</button>
+                        <!-- <button id="backToStep2" class="bg-gray-400 text-white px-4 py-2 rounded">Back</button> -->
                         <button id="nextToStep4" class="bg-blue-600 text-white px-4 py-2 rounded">Next</button>
                     </div>
                 </div>
@@ -238,7 +238,7 @@
                         <input type="number" id="vehicleCost" class="w-full p-2 border rounded" step="0.01">
                     </div>
                     <div class="space-x-4">
-                        <button id="backToStep3" class="bg-gray-400 text-white px-4 py-2 rounded">Back</button>
+                        <!-- <button id="backToStep3" class="bg-gray-400 text-white px-4 py-2 rounded">Back</button> -->
                         <button id="saveBooking" class="bg-blue-600 text-white px-4 py-2 rounded">Save Booking</button>
                     </div>
                 </div>
@@ -546,17 +546,18 @@
             document.getElementById('bookingModal').classList.remove('hidden');
         });
 
-        document.getElementById('backToStep1').addEventListener('click', function() {
-            showStep('step1');
-        });
-        document.getElementById('backToStep2').addEventListener('click', function() {
-            showStep('step2');
-        });
-        document.getElementById('backToStep3').addEventListener('click', function() {
-            showStep('step3');
-        });
+        // document.getElementById('backToStep1').addEventListener('click', function() {
+        //     showStep('step1');
+        // });
+        // document.getElementById('backToStep2').addEventListener('click', function() {
+        //     showStep('step2');
+        // });
+        // document.getElementById('backToStep3').addEventListener('click', function() {
+        //     showStep('step3');
+        // });
 
         document.getElementById('saveBooking').addEventListener('click', function() {
+            console.log('test')
             const bookingData = {
                 booking_id: currentBookingId,
                 flight_info_img: getImagesAsBase64(document.getElementById('flightInfoImage')),

@@ -10,6 +10,7 @@ import base64
 from django.db.models import Count, Sum
 from django.utils import timezone
 from datetime import timedelta
+import re
 
 def search_customers(request):
     search_term = request.GET.get('term', '')
@@ -28,6 +29,10 @@ def create_booking(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         try:
+            # Ensure at least one of the checkboxes is True
+            if not any([data.get('regarding_flight', False), data.get('regarding_hotel', False), data.get('regarding_vehicle', False)]):
+                return JsonResponse({'success': False, 'error': 'At least one of "regarding_flight", "regarding_hotel", or "regarding_vehicle" must be True.'})
+
             call_log = CallLog.objects.get(id=data['call_log'])
             booking = Booking.objects.create(
                 added_by=request.user,
@@ -52,6 +57,43 @@ def add_billing_info(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         try:
+            # Validate input fields
+            required_fields = [
+                'booking_id', 'card_type', 'card_holder_name', 'card_holder_number', 
+                'email', 'card_number', 'expiry_date', 'card_cvv', 
+                'primary_address', 'country', 'zipcode'
+            ]
+            
+            # Check for blank fields
+            for field in required_fields:
+                if field not in data or not data[field].strip():
+                    return JsonResponse({'success': False, 'error': f"{field.replace('_', ' ').capitalize()} is required and cannot be blank."})
+            
+            # Validate card number length (15 or 16 digits)
+            if not re.match(r'^\d{15,16}$', data['card_number']):
+                return JsonResponse({'success': False, 'error': 'Card number must be 15 or 16 digits long.'})
+            
+            # Validate CVV (3 or 4 digits)
+            if not re.match(r'^\d{3,4}$', data['card_cvv']):
+                return JsonResponse({'success': False, 'error': 'CVV must be 3 or 4 digits long.'})
+            
+            # Validate card holder name (should not contain numbers)
+            if re.search(r'\d', data['card_holder_name']):
+                return JsonResponse({'success': False, 'error': 'Card holder name must not contain numbers.'})
+            
+            # Validate email format
+            if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', data['email']):
+                return JsonResponse({'success': False, 'error': 'Invalid email format.'})
+            
+            # Validate expiry date (MM/YY or MM/YYYY)
+            if not re.match(r'^(0[1-9]|1[0-2])\/?([0-9]{2}|[0-9]{4})$', data['expiry_date']):
+                return JsonResponse({'success': False, 'error': 'Invalid expiry date format. Use MM/YY or MM/YYYY.'})
+
+            # Validate zip code (you can adjust this based on your country’s zip code format)
+            if not re.match(r'^\d{5}(-\d{4})?$|^\d{6}$', data['zipcode']):
+                return JsonResponse({'success': False, 'error': 'Invalid zipcode format.'})
+            
+
             booking = Booking.objects.get(booking_id=data['booking_id'])
             billing_info = BillingInformation.objects.create(
                 booking=booking,
@@ -82,6 +124,12 @@ def add_passengers(request):
             passengers = data['passengers']
             
             for passenger_data in passengers:
+                required_fields = ['full_passenger_name', 'date_of_birth', 'gender']
+                
+                for field in required_fields:
+                    if not passenger_data.get(field) or not passenger_data[field].strip():
+                        return JsonResponse({'success': False, 'error': f"{field.replace('_', ' ').capitalize()} is required and cannot be blank."})
+                    
                 Passenger.objects.create(
                     booking=booking,
                     full_passenger_name=passenger_data['full_passenger_name'],
@@ -106,19 +154,39 @@ def save_booking(request):
             
             def save_images(image_data, field):
                 if image_data:
-                    image_data = image_data[0].split(',')[1]  # Remove the data:image/png;base64, part
+                    image_data = image_data[0].split(',')[1] 
                     image = ContentFile(base64.b64decode(image_data), name=f"{field}.png")
                     setattr(booking, field, image)
 
-            save_images(data.get('flight_info_img'), 'flight_info_img')
-            save_images(data.get('hotel_info_img'), 'hotel_info_img')
-            save_images(data.get('vehicle_info_img'), 'vehicle_info_img')
+            # Validate and save flight-related information if applicable
+            if booking.regarding_flight:
+                if 'flight_cost' not in data or 'flight_info_img' not in data:
+                    return JsonResponse({'success': False, 'error': 'Flight cost and flight info image are required when regarding_flight is True.'})
+                try:
+                    booking.flight_cost = float(data.get('flight_cost', 0))
+                except ValueError:
+                    return JsonResponse({'success': False, 'error': 'Invalid flight cost.'})
+                save_images(data.get('flight_info_img'), 'flight_info_img')
 
-            try:
-                booking.flight_cost = float(data.get('flight_cost', 0))
-                booking.hotel_cost = float(data.get('hotel_cost', 0))
-                booking.vehicle_cost = float(data.get('vehicle_cost', 0))
-            except: pass
+            # Validate and save hotel-related information if applicable
+            if booking.regarding_hotel:
+                if 'hotel_cost' not in data or 'hotel_info_img' not in data:
+                    return JsonResponse({'success': False, 'error': 'Hotel cost and hotel info image are required when regarding_hotel is True.'})
+                try:
+                    booking.hotel_cost = float(data.get('hotel_cost', 0))
+                except ValueError:
+                    return JsonResponse({'success': False, 'error': 'Invalid hotel cost.'})
+                save_images(data.get('hotel_info_img'), 'hotel_info_img')
+
+            # Validate and save vehicle-related information if applicable
+            if booking.regarding_vehicle:
+                if 'vehicle_cost' not in data or 'vehicle_info_img' not in data:
+                    return JsonResponse({'success': False, 'error': 'Vehicle cost and vehicle info image are required when regarding_vehicle is True.'})
+                try:
+                    booking.vehicle_cost = float(data.get('vehicle_cost', 0))
+                except ValueError:
+                    return JsonResponse({'success': False, 'error': 'Invalid vehicle cost.'})
+                save_images(data.get('vehicle_info_img'), 'vehicle_info_img')
             
             booking.save()
             return JsonResponse({'success': True, 'booking_id': booking.booking_id})
