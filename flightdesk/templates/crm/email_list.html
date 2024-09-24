@@ -2,33 +2,44 @@
 
 {% block content %}
 <h2 class="text-2xl font-bold mb-4">Email List</h2>
-<table class="w-full border-collapse border">
-    <thead>
-        <tr class="bg-gray-200">
-            <th class="border p-2">Booking ID</th>
-            <th class="border p-2">Customer</th>
-            <th class="border p-2">Subject</th>
-            <th class="border p-2">Status</th>
-            <th class="border p-2">Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for email in emails %}
-        <tr>
-            <td class="border p-2">{{ email.booking.booking_id }}</td>
-            <td class="border p-2">{{ email.booking.call_log.name }}</td>
-            <td class="border p-2">{{ email.subject }}</td>
-            <td class="border p-2">{{ email.status }}</td>
-            <td class="border p-2">
-                <a href="{% url 'email_edit' email.id %}" class="text-blue-600 hover:underline">Edit</a>
-                <a href="{% url 'email_view' email.id %}" class="text-green-600 hover:underline ml-2">View</a>
-                <a href="{% url 'email_send' email.id %}" class="text-purple-600 hover:underline ml-2">Send</a>
-                {% if user.is_supervisor %}
-                <a href="{% url 'email_delete' email.id %}" class="text-red-600 hover:underline ml-2">Delete</a>
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking ID</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            {% for email in emails %}
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap">{{ email.booking.booking_id }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ email.booking.call_log.name }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ email.subject }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                    {% if email.status == 'draft' %}
+                        bg-gray-200 text-gray-800
+                    {% elif email.status == 'sent' %}
+                        bg-green-200 text-green-800
+                    {% endif %}">
+                        {{ email.status }}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <a href="{% url 'email_edit' email.id %}" class="text-blue-600 hover:underline">Edit</a>
+                    <a href="{% url 'email_view' email.id %}" class="text-green-600 hover:underline ml-2">View</a>
+                    <a href="{% url 'email_send' email.id %}" class="text-purple-600 hover:underline ml-2">Send</a>
+                    {% if user.is_supervisor %}
+                    <a href="{% url 'email_delete' email.id %}" class="text-red-600 hover:underline ml-2">Delete</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock %}

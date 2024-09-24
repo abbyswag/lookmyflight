@@ -3,28 +3,43 @@
 {% block content %}
 <h1 class="text-2xl font-bold mb-4">Bookings</h1>
 <div class="overflow-x-auto">
-    <table class="min-w-full bg-white">
-        <thead>
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
             <tr>
-                <th class="py-2 px-4 border-b">Booking ID</th>
-                <th class="py-2 px-4 border-b">Customer</th>
-                <th class="py-2 px-4 border-b">Status</th>
-                <th class="py-2 px-4 border-b">Created At</th>
-                <th class="py-2 px-4 border-b">Actions</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking ID</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody class="bg-white divide-y divide-gray-200">
             {% for booking in bookings %}
             <tr>
-                <td class="py-2 px-4 border-b">{{ booking.booking_id }}</td>
-                <td class="py-2 px-4 border-b">{{ booking.call_log.name }}</td>
-                <td class="py-2 px-4 border-b">{{ booking.status }}</td>
-                <td class="py-2 px-4 border-b">{{ booking.created_at }}</td>
-                <td class="py-2 px-4 border-b">
+                <td class="px-6 py-4 whitespace-nowrap">{{ booking.booking_id }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ booking.call_log.name }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                    {% if booking.status == 'initiated' %}
+                        bg-yellow-200 text-yellow-800
+                    {% elif booking.status == 'authorizing' %}
+                        bg-blue-200 text-blue-800
+                    {% elif booking.status == 'allocating' %}
+                        bg-green-200 text-green-800
+                    {% elif booking.status == 'cleared' %}
+                        bg-teal-200 text-teal-800
+                    {% elif booking.status == 'confirmed' %}
+                        bg-gray-200 text-gray-800
+                    {% endif %}">
+                        {{ booking.status }}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ booking.created_at }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
                     <a href="{% url 'booking_detail' booking.pk %}" class="text-blue-600 hover:underline">View</a>
                     <a href="{% url 'booking_edit' booking.pk %}" class="ml-2 text-green-600 hover:underline">Edit</a>
                     {% if is_supervisor %}
-                    <a href="{% url 'booking_delete' booking.pk %}" class="text-red-600 hover:underline">Delete</a>
+                    <a href="{% url 'booking_delete' booking.pk %}" class="ml-2 text-red-600 hover:underline">Delete</a>
                     {% endif %}
                     {% if booking.status == 'confirmed' %}
                         <a href="{% url 'create_email' booking.booking_id %}" class="ml-2 text-purple-600 hover:underline">Mail</a>

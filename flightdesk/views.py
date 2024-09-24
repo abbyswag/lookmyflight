@@ -603,7 +603,7 @@ def approve_booking(request, booking_id):
         user_declaration = f"""
             <hr>
             <p><strong style="color: green; text-align: center;">&#10004; I confirm that I have read and agreed to the above terms.</strong></p>
-            <p style="text-align: left;>Dated: {date_time_string} UTC</p>
+            <p style="text-align: left;>Dated: {date_time_string} UTC" </p>
             <p style="text-align: right; font-family: {signature_style}, cursive; font-size: 24px;">{full_name}</p>
         """
         final_email_body = f"{email_body}{user_declaration}"
