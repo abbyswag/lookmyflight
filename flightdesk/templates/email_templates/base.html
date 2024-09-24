@@ -7,14 +7,25 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Email Notification</title>
+    <style>
+        .header-text {
+        font-size: 1.2rem;
+        }
+
+        @media (max-width: 767px) {
+        .header-text {
+            font-size: 1rem;
+        }
+        }
+    </style>
 </head>
 <body style="font-family: Arial, sans-serif; padding: 1rem;">
 
     <!-- Header -->
-    <div style=" display: flex; justify-content: space-between; align-items: center; background-color: rgb(114, 228, 243); padding: .5rem;">
+    <div style=" display: flex; justify-content: space-between; align-items: center; background-color: rgb(114, 228, 243); padding: .5rem;" class="header-text">
         <!-- <img src="{% static 'logo.jpeg' %}" alt="LOOKMYFLIGHT" width="150"> -->
-        <div style="text-align: left; padding: 1rem; font-weight: 800; font-size: 1.2rem;" >LOOKMYFLIGHT</div>
-        <div style="text-align: right; padding: 1rem; width: 100vw; font-size: 1.2rem;">
+        <div style="text-align: left; padding: 1rem; font-weight: 800;" >LOOKMYFLIGHT</div>
+        <div style="text-align: right; padding: 1rem; width: 100vw;">
             Book Online or Call Us 24/7<br><strong>1-877-718-3806</strong>
         </div>
     </div>

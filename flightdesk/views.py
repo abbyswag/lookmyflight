@@ -583,6 +583,8 @@ def get_clened_email(booking):
     cleaned_email_body = str(soup)
     return cleaned_email_body
 
+from datetime import datetime
+
 # @login_required
 def approve_booking(request, booking_id):
     booking = get_object_or_404(Booking, booking_id=booking_id)
@@ -596,9 +598,12 @@ def approve_booking(request, booking_id):
         signature_style = request.POST.get('signatureStyle')
 
         # User declaration with tick and signature
+        now = datetime.now()
+        date_time_string = now.strftime('%B %d, %Y at %I:%M %p')
         user_declaration = f"""
             <hr>
-            <p><strong style="color: green;">&#10004; I confirm that I have read and agreed to the above terms.</strong></p>
+            <p><strong style="color: green; text-align: center;">&#10004; I confirm that I have read and agreed to the above terms.</strong></p>
+            <p style="text-align: left;>Dated: {date_time_string} UTC</p>
             <p style="text-align: right; font-family: {signature_style}, cursive; font-size: 24px;">{full_name}</p>
         """
         final_email_body = f"{email_body}{user_declaration}"
