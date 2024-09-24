@@ -81,19 +81,19 @@
   <h2 class="highlited">Price Details</h2>
   <table width="100%" border="1" cellpadding="5" cellspacing="0">
     <thead>
-      {% if flight_info_img %}
+      {% if booking.regarding_flight %}
       <tr>
         <td colspan="3"><strong>Flight Cost</strong></td>
         <td>{{booking.flight_cost}}</td>
       </tr>
       {% endif %}
-      {% if hotel_info_img %}
+      {% if booking.regarding_hotel %}
       <tr>
         <td colspan="3"><strong>Hotel Cost</strong></td>
         <td>{{booking.hotel_cost}}</td>
       </tr>
       {% endif %}
-      {% if vehicle_info_img %}
+      {% if booking.regarding_vehicle %}
       <tr>
         <td colspan="3"><strong>Car Cost</strong></td>
         <td>{{booking.vehicle_cost}}</td>
@@ -152,7 +152,7 @@
   <br>
   <div style="display: flex; justify-content: space-between; align-items: center;">
     <p>Agent: {{booking.added_by.username}} <br> Contact: {{booking.added_by.last_name}}</p>
-    <a style="margin-left: 40rem;" href="{{ approval_url }}"><button style="background-color: rgb(168 74 232); padding: 1rem; color: #fff; border: none; border-radius: 10px; font-weight: 800; font-size: 1.5rem;">Authorize</button></a>
+    <a style="margin-left: 40rem;" href="{{ approval_url }}"><button style="background-color: rgb(168 74 232); padding: .5rem; color: #fff; border: none; border-radius: 10px; font-weight: 800; font-size: 1.5rem;">Authorize</button></a>
   </div>
 </div>
 <br>

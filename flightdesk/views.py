@@ -562,6 +562,10 @@ def email_send(request, pk):
 
         email.status = 'sent'
         email.save()
+
+        booking.status = 'authorizing'
+        booking.save()
+        
     except Exception as e:
         print(f"Error sending email: {e}")
     return redirect('email_list')
