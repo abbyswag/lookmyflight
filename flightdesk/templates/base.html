@@ -33,7 +33,7 @@
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
 
     <!-- Header -->
-    <header class="bg-blue-600 p-4">
+    <header class="fixed bg-blue-600 p-4 w-full">
         <div class="container mx-auto flex justify-between items-center">
             <div class="flex items-center">
                 <!-- Menu Toggle -->
@@ -67,7 +67,7 @@
     <div class="flex">
 
         <!-- Right Sidebar (Navigation) -->
-        <aside class="bg-white w-64 h-screen shadow-lg">
+        <aside class="fixed top-16 bg-white w-64 h-screen shadow-lg">
             <nav class="mt-10">
                 <a href="{% url 'dashboard' %}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-200 hover:text-blue-600">
                     Dashboard
@@ -90,7 +90,7 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 p-8">
+        <main class="flex-1 p-8 ml-64 mt-16">
             {% block content %}
             <!-- Page-specific content will go here -->
             {% endblock %}
@@ -269,9 +269,9 @@
     </div>    
 
     <!-- Footer -->
-    <footer class="bg-gray-800 p-4">
+    <footer class="bg-gray-800 p-4 ml-64">
         <div class="container mx-auto text-center text-white">
-            <p>&copy; 2024 DualNature. All rights reserved.</p>
+            <p>Developed by: <a class="text-yellow-300" href="https://dualnature.xyz/">DualNature</a></p>
         </div>
     </footer>
 

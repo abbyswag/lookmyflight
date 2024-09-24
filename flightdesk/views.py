@@ -345,9 +345,9 @@ def billing_information_delete(request, pk):
 @login_required
 def booking_list(request):
     if is_agent(request.user):
-        bookings = Booking.objects.filter(added_by=request.user)
+        bookings = Booking.objects.filter(added_by=request.user).order_by('-created_at')
     else:
-        bookings = Booking.objects.all()
+        bookings = Booking.objects.all().order_by('-created_at')
     return render(request, 'crm/booking_list.html', {'bookings': bookings, 'is_supervisor': is_supervisor(request.user)})
 
 @login_required
@@ -448,9 +448,9 @@ def booking_delete(request, pk):
 # Email Model Routes
 @login_required
 def email_list(request):
-    emails = Email.objects.all()
+    emails = Email.objects.all().order_by('-id')
     if request.user.groups.filter(name='agent').exists():
-        emails = Email.objects.filter(booking__added_by=request.user)
+        emails = Email.objects.filter(booking__added_by=request.user).order_by('-id')
     return render(request, 'crm/email_list.html', {'emails': emails})
 
 @login_required
@@ -565,7 +565,7 @@ def email_send(request, pk):
 
         booking.status = 'authorizing'
         booking.save()
-        
+
     except Exception as e:
         print(f"Error sending email: {e}")
     return redirect('email_list')
