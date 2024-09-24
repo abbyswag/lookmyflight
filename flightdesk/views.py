@@ -98,7 +98,7 @@ def call_log_list(request):
     if added_by and is_supervisor:
         filters &= Q(added_by__username=added_by)
 
-    call_logs = CallLog.objects.filter(filters).select_related('tag', 'added_by')
+    call_logs = CallLog.objects.filter(filters).select_related('tag', 'added_by').order_by('-call_date')
     
     # Prepare for the dropdown filters
     tags = Campaign.objects.all()
