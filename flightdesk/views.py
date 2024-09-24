@@ -566,17 +566,62 @@ def email_send(request, pk):
         print(f"Error sending email: {e}")
     return redirect('email_list')
 
+from bs4 import BeautifulSoup
+def get_clened_email(booking):
+    email = Email.objects.filter(booking=booking).first()
+    email_body = email.body if email else 'No email found.'
+    soup = BeautifulSoup(email_body, 'html.parser')
+    
+    # Remove all anchor (<a>) tags
+    for a_tag in soup.find_all('a'):
+        a_tag.decompose()
+    
+    cleaned_email_body = str(soup)
+    return cleaned_email_body
 
-@login_required
+# @login_required
 def approve_booking(request, booking_id):
     booking = get_object_or_404(Booking, booking_id=booking_id)
+
+    if request.method == 'POST':
+        booking.status = 'allocating'
+        booking.save()
+        # Retrieve form data
+        email_body = get_clened_email(booking)
+        full_name = request.POST.get('fullName')
+        signature_style = request.POST.get('signatureStyle')
+
+        # User declaration with tick and signature
+        user_declaration = f"""
+            <hr>
+            <p><strong style="color: green;">&#10004; I confirm that I have read and agreed to the above terms.</strong></p>
+            <p style="text-align: right; font-family: {signature_style}, cursive; font-size: 24px;">{full_name}</p>
+        """
+        final_email_body = f"{email_body}{user_declaration}"
+        # Create and save the email
+        new_email = Email(
+            subject=f"Signed Document for Booking ID {booking.booking_id}",
+            recipient='',
+            body=final_email_body,
+            status='sent',
+            booking=booking
+        )
+        new_email.save()
+        return render(request, 'approved.html', {'booking_id': booking.booking_id})
     
-    # Update the status of the booking to 'approved'
-    booking.status = 'allocating'
-    booking.save()
-    
-    # Redirect to a confirmation page or a list page
-    return render(request, 'approved.html', {'booking_id': booking.booking_id})
+    else:    
+        if booking.status == 'authorizing':
+            email_body = get_clened_email(booking)
+            return render(request, 'authorizing_booking.html', {
+                'booking_id': booking.booking_id,
+                'email_body': email_body,
+            })
+        
+        email_body = get_clened_email(booking)
+        return render(request, 'already_signed.html', {
+            'email_body': email_body,
+            'booking_id': booking.booking_id,
+        })
     
 
 from .models import Query

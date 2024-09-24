@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Booking Authorization</title>
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css">
+  
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Pacifico&family=Dancing+Script&family=Homemade+Apple&display=swap" rel="stylesheet">
+  <style>
+    #signature-output {
+      font-size: 24px;
+      margin-top: 20px;
+      text-align: right;
+      border-top: 1px solid #000;
+    }
+    .cursive{
+        font-family: cursive;
+    }
+    .great-vibes {
+      font-family: 'Great Vibes', cursive;
+    }
+    .pacifico {
+      font-family: 'Pacifico', cursive;
+    }
+    .dancing-script {
+      font-family: 'Dancing Script', cursive;
+    }
+    .homemade-apple {
+      font-family: 'Homemade Apple', cursive;
+    }
+  </style>
+</head>
+<body>
+  <div class="container mt-5">
+    <h2>Booking Authorization for {{ booking_id }}</h2>
+    
+    <p>{{ email_body|safe }}</p>
+    
+    <hr>
+    <form method="POST">
+      {% csrf_token %}
+      
+      <div class="form-group">
+        <label for="confirmationCheckbox">
+          <input type="checkbox" id="confirmationCheckbox" required> 
+          I confirm that I have read and agreed to the above terms.
+        </label>
+      </div>
+      
+      <div>
+        <div class="form-group">
+        <label for="fullName">Full Name</label>
+        <input type="text" class="form-control" id="fullName" name="fullName" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="signatureStyle">Choose Signature Style</label>
+        <select class="form-control" id="signatureStyle" name="signatureStyle">
+            <option value="homemade-apple">Homemade Apple</option>
+            <option value="cursive">Cursive</option>
+            <option value="great-vibes">Great Vibes</option>
+            <option value="pacifico">Pacifico</option>
+            <option value="dancing-script">Dancing Script</option>
+        </select>
+      </div>
+      </div>
+      
+      <div id="signature-output"></div>
+      
+      <button type="submit" class="btn btn-primary mt-4">Submit</button>
+    </form>
+  </div>
+  
+  <script>
+    document.getElementById('fullName').addEventListener('input', generateSignature);
+    document.getElementById('signatureStyle').addEventListener('change', generateSignature);
+  
+    function generateSignature() {
+      const name = document.getElementById('fullName').value;
+      const style = document.getElementById('signatureStyle').value;
+      const signatureOutput = document.getElementById('signature-output');
+  
+      // Apply the selected style as a class
+      signatureOutput.className = '';
+      if (name) {
+        signatureOutput.classList.add(style);
+        signatureOutput.textContent = name;
+      } else {
+        signatureOutput.textContent = '';
+      }
+    }
+  </script>
+  
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
