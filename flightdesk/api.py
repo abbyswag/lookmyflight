@@ -12,6 +12,7 @@ from django.utils import timezone
 from datetime import timedelta
 import re
 
+@login_required
 def search_customers(request):
     search_term = request.GET.get('term', '')
     if len(search_term) < 3:
@@ -19,7 +20,7 @@ def search_customers(request):
 
     customers = CallLog.objects.filter(
         Q(name__icontains=search_term) | Q(phone__icontains=search_term)
-    ).values('id', 'name', 'phone', 'email')[:10]  # Limit to 10 results
+    ).values('id', 'name', 'phone', 'call_date')[:10]  # Limit to 10 results
 
     return JsonResponse(list(customers), safe=False)
 

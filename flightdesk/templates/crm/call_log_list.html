@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Call Logs{% endblock %}
+{% block title %}Call Log{% endblock %}
 
 {% block content %}
 <div class="flex flex-col md:flex-row justify-between items-center mb-6">
@@ -119,7 +119,7 @@ $(function() {
                             value: item.name,
                             id: item.id,
                             phone: item.phone,
-                            email: item.email
+                            email: new Date(item.call_date).toLocaleDateString()
                         };
                     }));
                 }

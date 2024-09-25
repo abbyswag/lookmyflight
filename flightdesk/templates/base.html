@@ -69,23 +69,53 @@
         <!-- Right Sidebar (Navigation) -->
         <aside class="fixed top-16 bg-white w-64 h-screen shadow-lg">
             <nav class="mt-10">
-                <a href="{% url 'dashboard' %}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-200 hover:text-blue-600">
+                <a href="{% url 'dashboard' %}" class="{% if request.path == '/dashboard/' %}bg-gray-200 text-blue-600{% else %}hover:bg-gray-200 hover:text-blue-600{% endif %} block py-4 px-8 rounded transition duration-200 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                    </svg>
                     Dashboard
                 </a>
-                {% if is_supervisor %}
-                <a href="{% url 'staff_list' %}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-200 hover:text-blue-600">
-                    Staff
+                <a href="{% url 'call_log_list' %}" class="{% if request.path == '/call_logs/' %}bg-gray-200 text-blue-600{% else %}hover:bg-gray-200 hover:text-blue-600{% endif %} block py-4 px-8 rounded transition duration-200 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.25 9.75v-4.5m0 4.5h4.5m-4.5 0 6-6m-3 18c-8.284 0-15-6.716-15-15V4.5A2.25 2.25 0 0 1 4.5 2.25h1.372c.516 0 .966.351 1.091.852l1.106 4.423c.11.44-.054.902-.417 1.173l-1.293.97a1.062 1.062 0 0 0-.38 1.21 12.035 12.035 0 0 0 7.143 7.143c.441.162.928-.004 1.21-.38l.97-1.293a1.125 1.125 0 0 1 1.173-.417l4.423 1.106c.5.125.852.575.852 1.091V19.5a2.25 2.25 0 0 1-2.25 2.25h-2.25Z" />
+                    </svg>                      
+                    Call Log
                 </a>
-                {% endif %}
-                <a href="{% url 'call_log_list' %}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-200 hover:text-blue-600">
-                    Call Logs
-                </a>
-                <a href="{% url 'booking_list' %}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-200 hover:text-blue-600">
+                <a href="{% url 'booking_list' %}" class="{% if request.path == '/bookings/' %}bg-gray-200 text-blue-600{% else %}hover:bg-gray-200 hover:text-blue-600{% endif %} block py-4 px-8 rounded transition duration-200 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+                    </svg>                      
                     Booking
                 </a>
-                <a href="{% url 'email_list' %}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-200 hover:text-blue-600">
+                <a href="{% url 'email_list' %}" class="{% if request.path == '/emails/' %}bg-gray-200 text-blue-600{% else %}hover:bg-gray-200 hover:text-blue-600{% endif %} block py-4 px-8 rounded transition duration-200 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                    </svg>                      
                     Email
                 </a>
+                <a href="" class="{% if request.path == '/revision/' %}bg-gray-200 text-blue-600{% else %}hover:bg-gray-200 hover:text-blue-600{% endif %} block py-4 px-8 rounded transition duration-200 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9.75h4.875a2.625 2.625 0 0 1 0 5.25H12M8.25 9.75 10.5 7.5M8.25 9.75 10.5 12m9-7.243V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0c1.1.128 1.907 1.077 1.907 2.185Z" />
+                    </svg>                                       
+                    Revision
+                </a>
+                <a href="" class="{% if request.path == '/chat/' %}bg-gray-200 text-blue-600{% else %}hover:bg-gray-200 hover:text-blue-600{% endif %} block py-4 px-8 rounded transition duration-200 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
+                    </svg>                                       
+                    Chat
+                </a>
+                <a href="" class="{% if request.path == '/settings/' %}bg-gray-200 text-blue-600{% else %}hover:bg-gray-200 hover:text-blue-600{% endif %} block py-4 px-8 rounded transition duration-200 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>                                       
+                    Settings
+                </a>
+                <div class="absolute bottom-40 w-64 flex flex-col items-center justify-center">
+                    <p><strong>V - 1.0.0</strong></p>
+                    <p><i>Last Updated: 25/09/24</i></p>
+                </div>
             </nav>
         </aside>
 
