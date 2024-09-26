@@ -581,7 +581,7 @@ def get_clened_email(booking):
         a_tag.decompose()
     
     cleaned_email_body = str(soup)
-    return cleaned_email_body
+    return cleaned_email_body, email.recipient
 
 from datetime import datetime
 
@@ -593,7 +593,7 @@ def approve_booking(request, booking_id):
         booking.status = 'allocating'
         booking.save()
         # Retrieve form data
-        email_body = get_clened_email(booking)
+        email_body, rec = get_clened_email(booking)
         full_name = request.POST.get('fullName')
         signature_style = request.POST.get('signatureStyle')
 
@@ -610,7 +610,7 @@ def approve_booking(request, booking_id):
         # Create and save the email
         new_email = Email(
             subject=f"Signed Document for Booking ID {booking.booking_id}",
-            recipient='',
+            recipient=rec,
             body=final_email_body,
             status='sent',
             booking=booking
@@ -620,13 +620,13 @@ def approve_booking(request, booking_id):
     
     else:    
         if booking.status == 'authorizing':
-            email_body = get_clened_email(booking)
+            email_body, _ = get_clened_email(booking)
             return render(request, 'authorizing_booking.html', {
                 'booking_id': booking.booking_id,
                 'email_body': email_body,
             })
         
-        email_body = get_clened_email(booking)
+        email_body, _ = get_clened_email(booking)
         return render(request, 'already_signed.html', {
             'email_body': email_body,
             'booking_id': booking.booking_id,
