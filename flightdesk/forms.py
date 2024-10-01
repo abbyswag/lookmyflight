@@ -40,7 +40,7 @@
 
 
 from django import forms
-from .models import CallLog, Campaign, BillingInformation, Booking, Email, Query
+from .models import CallLog, Campaign, BillingInformation, Booking, Email, Query, Airline
 from django.contrib.auth.models import User, Group
 from django.core.exceptions import ValidationError
 from django_summernote.widgets import SummernoteWidget
@@ -49,7 +49,7 @@ from bs4 import BeautifulSoup
 class CallLogForm(forms.ModelForm):
     class Meta:
         model = CallLog
-        fields = ['converted', 'name', 'phone', 'email', 'tag', 'query_type','concern']
+        fields = ['converted', 'name', 'phone', 'email', 'tag', 'query_type','concern', 'airline']
 
 class CampaignForm(forms.ModelForm):
     class Meta:
@@ -157,4 +157,9 @@ class EmailForm(forms.ModelForm):
 class QueryForm(forms.ModelForm):
     class Meta:
         model = Query
+        fields = ['code']
+
+class AirlineForm(forms.ModelForm):
+    class Meta:
+        model = Airline
         fields = ['code']

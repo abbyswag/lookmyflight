@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}Agency Details{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow-lg">
+    <h2 class="text-2xl font-bold text-gray-800">Agency: {{ airline.code }}</h2>
+    <p class="text-gray-700 mt-4"><strong>Code:</strong> {{ airline.code }}</p>
+    
+    <div class="flex justify-end mt-6">
+        <a href="{% url 'airline_edit' airline.id %}" class="bg-yellow-600 text-white font-bold py-2 px-4 rounded hover:bg-yellow-700 mr-2">Edit</a>
+        <a href="{% url 'airline_list' %}" class="bg-gray-400 text-white font-bold py-2 px-4 rounded hover:bg-gray-500">Back to List</a>
+    </div>
+</div>
+{% endblock %}

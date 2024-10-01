@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ form.instance.id|default:"Create" }} Agency{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow-lg">
+    <h2 class="text-2xl font-bold text-gray-800">{{ form.instance.id|default:"Create" }} Agency</h2>
+    <form method="post" class="mt-4">
+        {% csrf_token %}
+        <!-- <label for="airline" class="block text-gray-700 text-sm font-bold mb-2">Agency</label> -->
+        <div class="mb-4">
+            {{ form.as_p }}
+        </div>
+        <div class="flex justify-end">
+            <a href="{% url 'airline_list' %}" class="bg-gray-400 text-white font-bold py-2 px-4 rounded hover:bg-gray-500 mr-2">Cancel</a>
+            <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700">Save</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -40,6 +40,12 @@ class Query(models.Model):
 
     def __str__(self):
         return self.code
+    
+class Airline(models.Model):
+    code = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return self.code
 
 # Calllog Model
 class CallLog(models.Model):
@@ -64,6 +70,7 @@ class CallLog(models.Model):
     call_date = models.DateTimeField(auto_now_add=True)
     tag = models.ForeignKey(Campaign, on_delete=models.SET_NULL, null=True, blank=True)
     query_type = models.ForeignKey(Query, on_delete=models.SET_NULL, null=True, blank=True)
+    airline = models.ForeignKey(Airline, on_delete=models.SET_NULL, null=True, blank=True)
     concern = models.TextField(blank=True)
 
     def __str__(self):
@@ -139,6 +146,7 @@ class Booking(models.Model):
     mco = models.FloatField(default= 0)
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='initiated')
     created_at = models.DateTimeField(auto_now_add=True)
+    remark = models.TextField(blank=True)
     added_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     regarding_flight = models.BooleanField(default=False)

@@ -74,7 +74,6 @@ def staff_list(request):
     return render(request, 'crm/staff_list.html', {'staff': staff})
 
 
-
 # CallLog Views
 @login_required
 def call_log_list(request):
@@ -155,53 +154,8 @@ def call_log_delete(request, pk):
         return redirect('call_log_list')
     return render(request, 'crm/call_log_confirm_delete.html', {'call_log': call_log})
 
-# Campaign Views (Supervisor only)
-@login_required
-@user_passes_test(is_supervisor)
-def campaign_list(request):
-    campaigns = Campaign.objects.all()
-    return render(request, 'campaign_list.html', {'campaigns': campaigns})
 
-@login_required
-@user_passes_test(is_supervisor)
-def campaign_create(request):
-    if request.method == 'POST':
-        form = CampaignForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('campaign_list')
-    else:
-        form = CampaignForm()
-    return render(request, 'campaign_form.html', {'form': form})
-
-@login_required
-@user_passes_test(is_supervisor)
-def campaign_detail(request, pk):
-    campaign = get_object_or_404(Campaign, pk=pk)
-    return render(request, 'campaign_detail.html', {'campaign': campaign})
-
-@login_required
-@user_passes_test(is_supervisor)
-def campaign_update(request, pk):
-    campaign = get_object_or_404(Campaign, pk=pk)
-    if request.method == 'POST':
-        form = CampaignForm(request.POST, instance=campaign)
-        if form.is_valid():
-            form.save()
-            return redirect('campaign_detail', pk=pk)
-    else:
-        form = CampaignForm(instance=campaign)
-    return render(request, 'crm/campaign_form.html', {'form': form})
-
-@login_required
-@user_passes_test(is_supervisor)
-def campaign_delete(request, pk):
-    campaign = get_object_or_404(Campaign, pk=pk)
-    if request.method == 'POST':
-        campaign.delete()
-        return redirect('campaign_list')
-    return render(request, 'crm/campaign_confirm_delete.html', {'campaign': campaign})
-
+# Campaign Routes
 @login_required
 @user_passes_test(is_supervisor)
 def campaign_list(request):
