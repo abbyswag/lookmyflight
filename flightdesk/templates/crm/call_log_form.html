@@ -43,7 +43,7 @@
 
         <div class="mb-4">
             <label for="airline" class="block text-gray-700 text-sm font-bold mb-2">Travel Agency</label>
-            <select id="query_type" name="query_type" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+            <select id="airline" name="airline" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
                 {% for choice in form.airline.field.queryset %}
                     <option value="{{ choice.id }}" {% if choice.id == form.airline.value %}selected{% endif %}>{{ choice }}</option>
                 {% endfor %}
