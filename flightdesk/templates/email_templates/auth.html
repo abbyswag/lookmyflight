@@ -7,7 +7,7 @@
   <h2 style="text-align: center;">Please Confirm This Booking</h2>
   <p style="text-align: center;">
   {% for b in billing_info %}
-  I, {{b.card_holder_name}} has authorize LOOKMYFLIGHT to confirm my booking by charging my Credit/Debit card, ending with <b>{{b.card_number|slice:":4"}}</b> for amount ({{booking.currency}} <b>{{total_amount}}</b>) to book the below itinerary.
+  I, {{b.card_holder_name}} has authorize LOOKMYFLIGHT to confirm my booking by charging my Credit/Debit card, ending with <b>{{b.card_number|slice:"-4:"}}</b> for amount ({{booking.currency}} <b>{{total_amount}}</b>) to book the below itinerary.
   {% endfor %}  
   </p>
   <p style="text-align: center;">
@@ -104,7 +104,7 @@
         <td>{{booking.mco}}</td>
       </tr>
       <tr bgcolor="#FFFFCC">
-        <td colspan="3"><strong>Total Flight Booking Amount (Including Taxes and Fees):</strong></td>
+        <td colspan="3"><strong>Total Booking Amount (Including Taxes and Fees):</strong></td>
         <td><strong>{{booking.currency}} {{ total_amount }}</strong></td>
       </tr>
     </tbody>
@@ -128,7 +128,7 @@
       {% for b in billing_info %}
       <tr style="text-align: center;">
         <td>{{ b.card_holder_name }}</td>
-        <td>**** **** **** {{ b.card_number|slice:":4" }}</td>
+        <td>**** **** **** {{ b.card_number|slice:"-4:" }}</td>
         <td>{{ b.card_type }}</td>
         <td>{{ booking.call_log.phone }}</td>
       </tr>
@@ -152,7 +152,7 @@
   <br>
   <div style="display: flex; justify-content: space-between; align-items: center;">
     <p>Agent: {{booking.added_by.username}} <br> Contact: {{booking.added_by.last_name}}</p>
-    <a style="margin-left: 40rem;" href="{{ approval_url }}"><button style="padding: .5rem 1rem;">Authorize</button></a>
+    <a style="margin-left: 40rem;" href="{{ approval_url }}"><button style="background-color: rgb(108 255 158);"><div style="padding: .5rem 1rem;">Authorize</div></button></a>
   </div>
 </div>
 <br>

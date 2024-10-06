@@ -403,8 +403,8 @@ def booking_delete(request, pk):
 @login_required
 def email_list(request):
     emails = Email.objects.all().order_by('-id')
-    if request.user.groups.filter(name='agent').exists():
-        emails = Email.objects.filter(booking__added_by=request.user).order_by('-id')
+    # if request.user.groups.filter(name='agent').exists():
+        # emails = Email.objects.filter(booking__added_by=request.user).order_by('-id')
     return render(request, 'crm/email_list.html', {'emails': emails})
 
 @login_required
