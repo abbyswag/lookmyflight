@@ -28,9 +28,53 @@
         <a href="{% url 'email_send' email.id %}" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">
             Send
         </a>
+        <button onclick="printEmail()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+            Print
+        </button>
         <a href="{% url 'email_list' %}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
             Back to List
         </a>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+    function printEmail() {
+        // Create a new window for printing
+        const printWindow = window.open('', '_blank');
+        
+        // Generate print-friendly content
+        const content = `
+            <html>
+            <head>
+                <title>Email Preview - ${document.querySelector('p:nth-of-type(2)').textContent}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; }
+                    .header { margin-bottom: 20px; }
+                    .content { margin-bottom: 15px; }
+                    .label { font-weight: bold; }
+                </style>
+            </head>
+            <body>
+                <div class="content">
+                    ${document.querySelector('.border').innerHTML}
+                </div>
+            </body>
+            </html>
+        `;
+        
+        // Write content to new window
+        printWindow.document.write(content);
+        printWindow.document.close();
+        
+        // Wait for content to load then print
+        printWindow.onload = function() {
+            printWindow.print();
+            printWindow.onafterprint = function() {
+                printWindow.close();
+            };
+        };
+    }
+</script>
+{% endblock %}
 {% endblock %}
