@@ -1,13 +1,14 @@
 from django.urls import path
 from . import routes
 from . import api
-from flightdesk.views import basic, dashboard
+from flightdesk.views import basic, dashboard, revision, chat
 from django.shortcuts import redirect
 
 def redirect_to_login(request):
     return redirect('login')
 
 urlpatterns = [
+    # Base
     path('', redirect_to_login, name='root'),
 
     # Authentication Routes
@@ -82,5 +83,14 @@ urlpatterns = [
     path('api/save-booking/', api.save_booking, name='save_booking'),
 
     path('approve/<str:booking_id>/', routes.approve_booking, name='approve_booking'),
+
+    # Revision Routes
+    path('revision/', revision.revision_list, name='revision_list'),  # Show revisions
+    path('revision/<int:id>/edit/', revision.revision_edit, name='revision_edit'),  # Edit revision notes
+
+    # Chat Routes
+    path('chat/private/<int:user_id>/', chat.private_chat, name='private_chat'),
+    path('chat/', chat.private_chat, name='private_chat_list'),
+    path('chat/check_for_messages/', chat.check_for_messages, name='check_for_messages'),
 
 ]

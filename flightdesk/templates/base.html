@@ -28,12 +28,32 @@
         .homemade-apple {
           font-family: 'Homemade Apple', cursive;
         }
+        #chat-button {
+    position: relative;
+}
+
+#chat-badge {
+    position: absolute;
+    top: -5px; /* Adjust the position from the top */
+    right: -5px; /* Adjust the position from the right */
+    background-color: red;
+    color: white;
+    font-size: 10px; /* Make the number smaller */
+    width: 16px; /* Small circular badge */
+    height: 16px;
+    border-radius: 50%; /* Make it circular */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 2px; /* Optional for padding */
+    visibility: hidden; /* Initially hidden */
+}
       </style>
 </head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
 
     <!-- Header -->
-    <header class="fixed bg-blue-600 p-4 w-full">
+    <header class="fixed bg-blue-600 p-4 w-full z-50">
         <div class="container mx-auto flex justify-between items-center">
             <div class="flex items-center">
                 <!-- Menu Toggle -->
@@ -93,17 +113,18 @@
                     </svg>                      
                     Email
                 </a>
-                <a href="" class="{% if request.path == '/revision/' %}bg-gray-200 text-blue-600{% else %}hover:bg-gray-200 hover:text-blue-600{% endif %} block py-4 px-8 rounded transition duration-200 flex items-center">
+                <a href="{% url 'revision_list' %}" class="{% if request.path == '/revision/' %}bg-gray-200 text-blue-600{% else %}hover:bg-gray-200 hover:text-blue-600{% endif %} block py-4 px-8 rounded transition duration-200 flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-4">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9.75h4.875a2.625 2.625 0 0 1 0 5.25H12M8.25 9.75 10.5 7.5M8.25 9.75 10.5 12m9-7.243V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0c1.1.128 1.907 1.077 1.907 2.185Z" />
                     </svg>                                       
                     Revision
                 </a>
-                <a href="" class="{% if request.path == '/chat/' %}bg-gray-200 text-blue-600{% else %}hover:bg-gray-200 hover:text-blue-600{% endif %} block py-4 px-8 rounded transition duration-200 flex items-center">
+                <a href="{% url 'private_chat_list' %}" id="chat-button" class="{% if request.path == '/chat/' %}bg-gray-200 text-blue-600{% else %}hover:bg-gray-200 hover:text-blue-600{% endif %} block py-4 px-8 rounded transition duration-200 flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-4">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
                     </svg>                                       
                     Chat
+                    <span id="chat-badge" class="absolute top-0 right-0 bg-red-600 text-white text-xs rounded-full px-2 py-1 hidden">0</span>
                 </a>
                 <a href="" class="{% if request.path == '/settings/' %}bg-gray-200 text-blue-600{% else %}hover:bg-gray-200 hover:text-blue-600{% endif %} block py-4 px-8 rounded transition duration-200 flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-4">
@@ -316,6 +337,34 @@
         document.querySelector('.relative > button').addEventListener('click', function () {
             document.getElementById('profile-dropdown').classList.toggle('hidden');
         });
+    </script>
+
+    <script>
+        // Function to check for unread messages
+function checkForUnreadMessages() {
+    fetch("{% url 'check_for_messages' %}")
+        .then(response => response.json())
+        .then(data => {
+            const unreadMessagesCount = data.unread_messages;
+
+            // Get the chat button and the badge element
+            const chatBadge = document.getElementById('chat-badge');
+
+            if (unreadMessagesCount > 0) {
+                // Update the badge with the unread messages count
+                chatBadge.innerHTML = unreadMessagesCount;
+                chatBadge.style.visibility = 'visible'; // Show the badge
+            } else {
+                chatBadge.style.visibility = 'hidden'; // Hide the badge if no unread messages
+            }
+        });
+}
+
+// Poll for unread messages every 30 seconds
+setInterval(checkForUnreadMessages, 30000); // 30000ms = 30 seconds
+
+// Initial check when the page loads
+checkForUnreadMessages();
     </script>
 
     <!-- script for fetch requests -->

@@ -2,7 +2,6 @@ import openpyxl
 from django.http import HttpResponse
 from django.utils import timezone
 from datetime import timedelta
-
 from flightdesk.views import *
 
 
@@ -70,7 +69,6 @@ def download_call_log_excel(request):
     workbook.save(response)
     return response
 
-
 @login_required
 @user_passes_test(is_supervisor)
 def download_bookings_excel(request):
@@ -137,3 +135,20 @@ def download_bookings_excel(request):
     # Save the Excel file to the response
     workbook.save(response)
     return response
+
+@login_required
+def dashboard(request):
+    user = request.user
+    is_supervisor = user.groups.filter(name='supervisor').exists()
+
+    tags = Campaign.objects.all()
+    query_types = Query.objects.all()
+
+    context = {
+        'is_supervisor': is_supervisor,
+        'tags': tags,
+        'query_types': query_types,
+    }
+
+    return render(request, 'crm/dashboard.html', context)
+

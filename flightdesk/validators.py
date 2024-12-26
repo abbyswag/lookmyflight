@@ -2,7 +2,6 @@ from django.core.validators import RegexValidator
 from django.forms import ValidationError
 import datetime
 
-
 class CardExpiryValidator(RegexValidator):
     regex = r'^(0[1-9]|1[0-2])(/)(([0-9]){2})$'
     message = 'Expiry date must be in MM/YY format'

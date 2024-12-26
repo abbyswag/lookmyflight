@@ -29,7 +29,13 @@ def logout_view(request):
     return redirect('login')
 
 
-# Dashboard View
+# Check for Supervisor Group
+def is_supervisor(user):
+    return user.groups.filter(name='supervisor').exists()
+
+from django.db.models import Q
+from django.contrib.auth.models import User
+
 @login_required
 def dashboard(request):
     user = request.user
@@ -45,14 +51,6 @@ def dashboard(request):
     }
 
     return render(request, 'crm/dashboard.html', context)
-
-# Check for Supervisor Group
-def is_supervisor(user):
-    return user.groups.filter(name='supervisor').exists()
-
-from django.db.models import Q
-from django.contrib.auth.models import User
-
 
 # Staff Views
 @login_required

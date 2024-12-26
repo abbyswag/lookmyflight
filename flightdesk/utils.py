@@ -1,9 +1,10 @@
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
+from .models import Email
 from django.conf import settings
 from django.urls import reverse
-from .models import Email
-import os
+import os, datetime
+
 
 def send_email(subject, recipients, message):
     send_mail(
@@ -15,6 +16,7 @@ def send_email(subject, recipients, message):
         html_message= message,
     )
 
+
 def save_email(subject, recipient, message, added_by, status= 'sent'):
     email = Email.objects.create(
         subject=subject,
@@ -25,6 +27,7 @@ def save_email(subject, recipient, message, added_by, status= 'sent'):
     )
     email.content_subtype = 'plain'
     email.save()
+
 
 def create_auth_draft(booking):
     try:

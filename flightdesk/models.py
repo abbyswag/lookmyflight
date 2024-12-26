@@ -1,3 +1,4 @@
+import os, datetime
 from django.db import models
 from django.urls import reverse
 from django.conf import settings
@@ -8,13 +9,10 @@ from django.db.models.signals import post_save
 from django.core.validators import RegexValidator
 from django.template.loader import render_to_string
 from django.core.validators import RegexValidator, EmailValidator
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
-import datetime, os, pickle
 from .validators import CardExpiryValidator
 
-# utils functions/scripts
+
 def generate_mybooking_id():
     today = datetime.datetime.now().strftime('%y%m%d')
     existing_mybookings = Booking.objects.filter(booking_id__startswith=f'LM{today}')
@@ -28,26 +26,28 @@ def generate_mybooking_id():
     
     return f'LM{today}{str(new_number).zfill(3)}'
 
-# Campaign Model
+
 class Campaign(models.Model):
     code = models.CharField(max_length=50, unique=True)
 
     def __str__(self):
         return self.code
 
+
 class Query(models.Model):
     code = models.CharField(max_length=50, unique=True)
 
     def __str__(self):
         return self.code
-    
+
+
 class Airline(models.Model):
     code = models.CharField(max_length=50, unique=True)
 
     def __str__(self):
         return self.code
 
-# Calllog Model
+
 class CallLog(models.Model):
     TAG_CHOICES = (
         ('LMF', 'LMF'),
@@ -77,7 +77,6 @@ class CallLog(models.Model):
         return f"{self.name} - {self.phone}"
 
 
-# BillingInformation Model
 class BillingInformation(models.Model):
 
     card_type_choices = (
@@ -111,7 +110,6 @@ class BillingInformation(models.Model):
         return f'{self.card_type} - {self.card_holder_name}'
     
 
-# Passenger Model
 class Passenger(models.Model):
     GENDER_CHOICES = (
         ('M', 'Male'),
@@ -125,7 +123,6 @@ class Passenger(models.Model):
     ticket_number = models.CharField(max_length=50, blank=True)
 
 
-# Booking Model
 class Booking(models.Model):
     CURRENCY_CHOICES = (
         ('CAD', 'CAD'),
@@ -166,6 +163,48 @@ class Booking(models.Model):
 
     def __str__(self):
         return f"Booking {self.booking_id} - {self.status}"
+        
+
+class EmailAttachtment(models.Model):
+    email= models.ForeignKey('Email', on_delete=models.CASCADE)
+    attachment = models.ImageField(upload_to='email_attachments', blank= True)
+
+
+class Email(models.Model):
+
+    STATUS_CHOICES = (
+        ('draft', 'Draft'),
+        ('sent', 'Sent'),
+    )
+
+    subject = models.CharField(max_length=255)
+    recipient = models.EmailField()
+    body = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    booking= models.ForeignKey('Booking', on_delete=models.CASCADE, default=None)
+
+
+class Revision(models.Model):
+    STATUS_CHOICES = (
+        ('cancelled', 'Cancelled'),
+        ('refund', 'Refund'),
+    )
+    
+    booking = models.ForeignKey('Booking', on_delete=models.CASCADE)
+    subcategory = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    note = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Revision for {self.booking.booking_id} - {self.subcategory}"
+    
+
+
+@receiver(post_save, sender=Booking)
+def create_revision(sender, instance, created, **kwargs):
+    if instance.subcategory in ['cancelled', 'refund']:
+        # Create a revision record when a booking has 'cancelled' or 'refund' subcategory
+        Revision.objects.get_or_create(booking=instance, subcategory=instance.subcategory)
 
 
 @receiver(post_save, sender=Booking)
@@ -184,23 +223,24 @@ def create_notification(sender, instance, created, **kwargs):
             fail_silently=False,
             html_message= message,
         )
-        
 
-class EmailAttachtment(models.Model):
-    email= models.ForeignKey('Email', on_delete=models.CASCADE)
-    attachment = models.ImageField(upload_to='email_attachments', blank= True)
 
-# Email Model
-class Email(models.Model):
+# Model to represent a private chat conversation
+class PrivateChat(models.Model):
+    user1 = models.ForeignKey(User, related_name='private_chats_initiated', on_delete=models.CASCADE)
+    user2 = models.ForeignKey(User, related_name='private_chats_received', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    STATUS_CHOICES = (
-        ('draft', 'Draft'),
-        ('sent', 'Sent'),
-    )
+    def __str__(self):
+        return f"Chat between {self.user1.username} and {self.user2.username}"
 
-    subject = models.CharField(max_length=255)
-    recipient = models.EmailField()
-    body = models.TextField()
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
-    booking= models.ForeignKey('Booking', on_delete=models.CASCADE, default=None)
+# Model to represent messages in the private chat
+class PrivateMessage(models.Model):
+    chat = models.ForeignKey(PrivateChat, related_name='messages', on_delete=models.CASCADE)
+    sender = models.ForeignKey(User, related_name='sent_private_messages', on_delete=models.CASCADE)
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    read = models.BooleanField(default=False)
 
+    def __str__(self):
+        return f"Message from {self.sender.username} to {self.chat.user2.username if self.sender != self.chat.user1 else self.chat.user1.username}"
