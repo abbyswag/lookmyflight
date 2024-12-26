@@ -7,7 +7,11 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import send_mail
 from django.conf import settings
 from flightdesk.forms import RevisionForm
+from django.contrib.auth.decorators import user_passes_test
 
+
+def is_cs_team(user):
+    return user.groups.filter(name='cs_team').exists()
 
 @login_required
 def revision_list(request):
@@ -18,6 +22,7 @@ def revision_list(request):
 
 
 @login_required
+@user_passes_test(is_cs_team)
 def revision_edit(request, id):
     revision = get_object_or_404(Revision, id=id)
     
