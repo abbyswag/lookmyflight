@@ -11,7 +11,7 @@ def generate_otp():
     return random.randint(1000, 9999)
 
 def send_otp_email(email, otp, username):
-    subject = "Your OTP for Login"
+    subject = f"OTP for {username}"
     message = f"OTP for {username} is: {otp}. Please enter this to complete your login."
     send_mail(subject, message, settings.EMAIL_HOST_USER, [email])
 
@@ -42,7 +42,7 @@ def login_view(request):
                 otp = generate_otp()
                 request.session['otp'] = otp
                 request.session['otp_user_id'] = user.id
-                send_otp_email('abbyswag25@gmail.com', otp, username)
+                send_otp_email('support@lookmyflight.com', otp, username)
                 # Step 2: Show OTP form
                 return render(request, 'crm/otp.html', {'email': user.email})
             else:
