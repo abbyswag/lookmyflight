@@ -1,40 +1,6 @@
 {% extends 'base.html' %}
-
 {% block title %}Dashboard{% endblock %}
-
 {% block content %}
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    <div class="bg-white p-6 rounded-lg shadow-lg">
-        <h2 class="text-2xl font-bold text-gray-800">Welcome, {{ user.username }}!</h2>
-        <p class="text-gray-600 mt-2">Here is your dashboard overview.</p>
-    </div>
-
-    {% if is_supervisor %}
-    <div class="bg-white p-6 rounded-lg shadow-lg">
-        <h3 class="text-xl font-semibold text-gray-800">Staff</h3>
-        <p class="text-gray-600 mt-2">Manage your Staff effectively.</p>
-        <a href="{% url 'staff_list' %}" class="text-blue-600 hover:underline mt-4 inline-block">View Staff</a>
-    </div>
-
-    <div class="bg-white p-6 rounded-lg shadow-lg">
-        <h3 class="text-xl font-semibold text-gray-800">Query Type</h3>
-        <p class="text-gray-600 mt-2">Manage your Query type effectively.</p>
-        <a href="{% url 'query_list' %}" class="text-blue-600 hover:underline mt-4 inline-block">View Query Type</a>
-    </div>
-
-    <div class="bg-white p-6 rounded-lg shadow-lg">
-        <h3 class="text-xl font-semibold text-gray-800">Campaigns</h3>
-        <p class="text-gray-600 mt-2">Manage your campaigns effectively.</p>
-        <a href="{% url 'campaign_list' %}" class="text-blue-600 hover:underline mt-4 inline-block">View Campaigns</a>
-    </div>
-
-    <div class="bg-white p-6 rounded-lg shadow-lg">
-        <h3 class="text-xl font-semibold text-gray-800">Agency</h3>
-        <p class="text-gray-600 mt-2">Manage travel agencies effectively.</p>
-        <a href="{% url 'airline_list' %}" class="text-blue-600 hover:underline mt-4 inline-block">View Travel Agency</a>
-    </div>
-    {% endif %}
-</div> 
 
 {% if is_supervisor %}
 <div class="bg-white p-6 rounded-lg shadow-lg mb-6 col-span-1 md:col-span-3 mt-6">
@@ -61,26 +27,13 @@
         </div>
     </div>
 
-    <div class="flex flex-col">
-        <!-- Table -->
-        <div id="tableContainer" class="lg:w-full overflow-x-auto">
-            <!-- Table content will be dynamically updated here -->
-        </div>
+    <canvas id="callLogBarChart"></canvas>
 
-        <!-- Pie Chart -->
-        <div class="lg:w-1/3 mt-6">
-            <div class="mb-4">
-                <select id="chartFilter" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                    <option value="tag">By Tag</option>
-                    <option value="queryType">By Query Type</option>
-                </select>
-            </div>
-            <canvas id="callLogPieChart"></canvas>
-        </div>
+    <div id="tableContainer" class="lg:w-full overflow-x-auto">
+        <!-- Table content will be dynamically updated here -->
     </div>
 </div>
-{% endif %}   
-
+{% endif %}
 
 {% if is_supervisor %}
 <div class="bg-white p-6 rounded-lg shadow-lg mb-6 col-span-1 md:col-span-3">
@@ -132,6 +85,10 @@
         </div>
     </div>
 
+    <!-- Line Chart Container -->
+    <div>
+        <canvas id="bookingLineChart" width="400" height="200"></canvas>
+    </div>
     <!-- Booking Summary Table -->
     <div id="bookingSummaryTableContainer" class="overflow-x-auto">
         <!-- Table content will be dynamically updated here -->
@@ -140,196 +97,322 @@
 {% endif %}
 
 
-<div class="mt-8">
-    <h2 class="text-2xl font-bold text-gray-800">Recent Activity</h2>
-    <div class="mt-4 bg-white p-6 rounded-lg shadow-lg">
-        {% if recent_activities %}
-            <ul class="space-y-4">
-                {% for activity in recent_activities %}
-                <li class="border-b pb-2">
-                    <p class="text-gray-700"><strong>{{ activity.title }}</strong></p>
-                    <p class="text-gray-600 text-sm">{{ activity.description }}</p>
-                    <p class="text-gray-500 text-xs">{{ activity.timestamp }}</p>
-                </li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p class="text-gray-600">No recent activities found.</p>
-        {% endif %}
+<div class="container">
+    <h1>Customer Heatmap</h1>
+    
+    <!-- Heatmap Section -->
+    <div id="heatmap"></div>
+
+    <!-- Top 5 Locations Table -->
+    <div class="top-locations">
+        <h2>Top 5 Locations</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Zipcode</th>
+                    <th>Total Revenue</th>
+                    <th>Total Bookings</th>
+                    <th>Total Passengers</th>
+                </tr>
+            </thead>
+            <tbody id="topLocationsTable">
+                <!-- Data will be dynamically populated -->
+            </tbody>
+        </table>
     </div>
 </div>
-{% endblock %}
 
+
+{% endblock %}
 {% block scripts %}
 {{ block.super }}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Call Scripts -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const dateFilter = document.getElementById('dateFilter');
-        const customDateRange = document.getElementById('customDateRange');
-        const chartFilter = document.getElementById('chartFilter');
-        const ctx = document.getElementById('callLogPieChart').getContext('2d');
+    const dateFilter = document.getElementById('dateFilter');
+    const customDateRange = document.getElementById('customDateRange');
 
-        let pieChart;
-
-        dateFilter.addEventListener('change', function() {
-            if (this.value === 'custom') {
-                customDateRange.classList.remove('hidden');
-            } else {
-                customDateRange.classList.add('hidden');
-            }
-            updateData();
-        });
-
-        chartFilter.addEventListener('change', updateChart);
-
-        function updateData() {
-            const filterValue = dateFilter.value;
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
-
-            fetch(`/api/call-log-summary/?filter=${filterValue}&start_date=${startDate}&end_date=${endDate}`)
-                .then(response => response.json())
-                .then(data => {
-                    updateTable(data);
-                    updateChart();
-                });
+    dateFilter.addEventListener('change', function() {
+        if (this.value === 'custom') {
+            customDateRange.classList.remove('hidden');
+        } else {
+            customDateRange.classList.add('hidden');
         }
+        fetchCallLogSummary();
+    });
 
-        function updateTable(data) {
-            const tableContainer = document.getElementById('tableContainer');
-            let tableHTML = `
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tag</th>
-                            ${data.query_types.map(qt => `<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${qt}</th>`).join('')}
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        ${data.tags.map(tag => `
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${tag}</td>
-                                ${data.query_types.map(qt => `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.call_log_counts[tag][qt] || 0}</td>`).join('')}
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.call_log_counts[tag]['total'] || 0}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
-            tableContainer.innerHTML = tableHTML;
-        }
+    function fetchCallLogSummary() {
+        const filterValue = dateFilter.value;
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
 
-        function updateChart() {
-            const chartType = chartFilter.value;
-            const filterValue = dateFilter.value;
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
-
-            fetch(`/api/call-log-chart/?type=${chartType}&filter=${filterValue}&start_date=${startDate}&end_date=${endDate}`)
-                .then(response => response.json())
-                .then(data => {
-                    pieChart.data.labels = data.labels;
-                    pieChart.data.datasets[0].data = data.data;
-                    pieChart.update();
-                });
-        }
-
-        function initChart() {
-            pieChart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        data: [],
-                        backgroundColor: [
-                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
-                        ],
-                        hoverBackgroundColor: [
-                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'left',
-                        },
-                        title: {
-                            display: true,
-                            text: 'Call Log Distribution'
-                        }
-                    }
-                }
+        fetch(`/api/call-log-summary/?filter=${filterValue}&start_date=${startDate}&end_date=${endDate}`)
+            .then(response => response.json())
+            .then(data => {
+                updateCallLogSummaryTable(data);
             });
-        }
+    }
 
-        initChart();
-        updateData();
+    function updateCallLogSummaryTable(data) {
+        const tableContainer = document.getElementById('tableContainer');
+        const callLogCounts = data.call_log_counts;
+        const tags = data.tags;
+        const queryTypes = data.query_types;
 
-        // Booking Summary functionality
-        const bookingDateFilter = document.getElementById('bookingDateFilter');
-        const bookingCustomDateRange = document.getElementById('bookingCustomDateRange');
-        const bookingTagFilter = document.getElementById('bookingTagFilter');
-        const bookingQueryTypeFilter = document.getElementById('bookingQueryTypeFilter');
+        // Create table headers
+        let tableHTML = `
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tag</th>
+                        ${queryTypes.map(qt => `<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${qt}</th>`).join('')}
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+        `;
 
-        bookingDateFilter.addEventListener('change', function() {
-            if (this.value === 'custom') {
-                bookingCustomDateRange.classList.remove('hidden');
-            } else {
-                bookingCustomDateRange.classList.add('hidden');
-            }
-            updateBookingSummary();
+        // Create table rows
+        tags.forEach(tag => {
+            const tagCounts = callLogCounts[tag] || {};
+            tableHTML += `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${tag}</td>
+                    ${queryTypes.map(qt => `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${tagCounts[qt] || 0}</td>`).join('')}
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${tagCounts['total'] || 0}</td>
+                </tr>
+            `;
         });
 
-        bookingTagFilter.addEventListener('change', updateBookingSummary);
-        bookingQueryTypeFilter.addEventListener('change', updateBookingSummary);
+        tableHTML += `
+                </tbody>
+            </table>
+        `;
 
-        function updateBookingSummary() {
-            const filterValue = bookingDateFilter.value;
-            const startDate = document.getElementById('bookingStartDate').value;
-            const endDate = document.getElementById('bookingEndDate').value;
-            const tag = bookingTagFilter.value;
-            const queryType = bookingQueryTypeFilter.value;
+        // Update the table container
+        tableContainer.innerHTML = tableHTML;
+    }
 
-            fetch(`/api/booking-summary/?filter=${filterValue}&start_date=${startDate}&end_date=${endDate}&tag=${tag}&query_type=${queryType}`)
-                .then(response => response.json())
-                .then(data => {
-                    updateBookingSummaryTable(data);
-                });
+        // Initial data load
+        fetchCallLogSummary();
+    });
+
+    function fetchCallLogBarChartData() {
+    const filterValue = dateFilter.value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    fetch(`/api/call-log-bar-chart/?filter=${filterValue}&start_date=${startDate}&end_date=${endDate}`)
+        .then(response => response.json())
+        .then(data => {
+            const tagLabels = data.tags.map(item => item.tag__code || 'Unknown');
+            const tagCounts = data.tags.map(item => item.count);
+
+            const queryTypeLabels = data.query_types.map(item => item.query_type__code || 'Unknown');
+            const queryTypeCounts = data.query_types.map(item => item.count);
+
+            // Update Bar Chart Data
+            callLogBarChart.data.labels = [...tagLabels, ...queryTypeLabels];
+            callLogBarChart.data.datasets[0].data = [...tagCounts, ...Array(queryTypeLabels.length).fill(0)];
+            callLogBarChart.data.datasets[1].data = [...Array(tagLabels.length).fill(0), ...queryTypeCounts];
+            callLogBarChart.update();
+        });
+}
+
+// Initialize Chart.js Bar Chart
+const callLogCtx = document.getElementById('callLogBarChart').getContext('2d');
+const callLogBarChart = new Chart(callLogCtx, {
+    type: 'bar',
+    data: {
+        labels: [], // Tags and Query Types
+        datasets: [
+            { label: 'By Tag', data: [], backgroundColor: '#36A2EB' },
+            { label: 'By Query Type', data: [], backgroundColor: '#FFCE56' },
+        ]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'top',
+            },
+            title: {
+                display: true,
+                text: 'Call Log Distribution'
+            }
+        },
+        scales: {
+            x: { title: { display: true, text: 'Tags and Query Types' } },
+            y: { title: { display: true, text: 'Count' }, beginAtZero: true }
         }
+    }
+});
 
-        function updateBookingSummaryTable(data) {
-            const tableContainer = document.getElementById('bookingSummaryTableContainer');
-            let tableHTML = `
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agent</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No. of Bookings</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No. of Passengers</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue (MCO)</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        ${data.map(row => `
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${row.agent}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${row.num_bookings}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${row.num_passengers}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${row.revenue}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
-            tableContainer.innerHTML = tableHTML;
+// Fetch data when filters change
+dateFilter.addEventListener('change', fetchCallLogBarChartData);
+fetchCallLogBarChartData(); // Initial load
+
+
+</script>
+
+<!-- Booking Scripts -->
+<script>
+    // Booking Summary functionality
+    const bookingDateFilter = document.getElementById('bookingDateFilter');
+    const bookingCustomDateRange = document.getElementById('bookingCustomDateRange');
+    const bookingTagFilter = document.getElementById('bookingTagFilter');
+    const bookingQueryTypeFilter = document.getElementById('bookingQueryTypeFilter');
+
+    bookingDateFilter.addEventListener('change', function() {
+        if (this.value === 'custom') {
+            bookingCustomDateRange.classList.remove('hidden');
+        } else {
+            bookingCustomDateRange.classList.add('hidden');
         }
-
-        // Initial load of booking summary
         updateBookingSummary();
     });
+
+    bookingTagFilter.addEventListener('change', updateBookingSummary);
+    bookingQueryTypeFilter.addEventListener('change', updateBookingSummary);
+
+    function updateBookingSummary() {
+        const filterValue = bookingDateFilter.value;
+        const startDate = document.getElementById('bookingStartDate').value;
+        const endDate = document.getElementById('bookingEndDate').value;
+        const tag = bookingTagFilter.value;
+        const queryType = bookingQueryTypeFilter.value;
+
+        fetch(`/api/booking-summary/?filter=${filterValue}&start_date=${startDate}&end_date=${endDate}&tag=${tag}&query_type=${queryType}`)
+            .then(response => response.json())
+            .then(data => {
+                updateBookingSummaryTable(data);
+            });
+    }
+
+    function updateBookingSummaryTable(data) {
+        const tableContainer = document.getElementById('bookingSummaryTableContainer');
+        let tableHTML = `
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agent</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No. of Bookings</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No. of Passengers</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue (MCO)</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    ${data.map(row => `
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${row.agent}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${row.num_bookings}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${row.num_passengers}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${row.revenue}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+        tableContainer.innerHTML = tableHTML;
+    }
+
+    // Initial load of booking summary
+    updateBookingSummary();
+
+    function fetchDailyChartData() {
+    const filterValue = bookingDateFilter.value;
+    const startDate = document.getElementById('bookingStartDate').value;
+    const endDate = document.getElementById('bookingEndDate').value;
+
+    fetch(`/api/booking-daily-chart/?filter=${filterValue}&start_date=${startDate}&end_date=${endDate}`)
+        .then(response => response.json())
+        .then(data => {
+            bookingLineChart.data.labels = data.dates;
+            bookingLineChart.data.datasets[0].data = data.daily_bookings;
+            bookingLineChart.data.datasets[1].data = data.daily_passengers;
+            bookingLineChart.data.datasets[2].data = data.daily_revenue;
+            bookingLineChart.update();
+        });
+}
+
+// Initialize Chart.js Line Chart
+const bookingLineCtx = document.getElementById('bookingLineChart').getContext('2d');
+const bookingLineChart = new Chart(bookingLineCtx, {
+    type: 'line',
+    data: {
+        labels: [], // Dates
+        datasets: [
+            { label: 'Bookings', data: [], borderColor: '#FF6384', tension: 0.4 },
+            { label: 'Passengers', data: [], borderColor: '#36A2EB', tension: 0.4 },
+            { label: 'Revenue', data: [], borderColor: '#FFCE56', tension: 0.4 },
+        ]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            x: { title: { display: true, text: 'Dates' } },
+            y: { title: { display: true, text: 'Counts/Amount' }, beginAtZero: true }
+        }
+    }
+});
+
+// Fetch data when filters change
+bookingDateFilter.addEventListener('change', fetchDailyChartData);
+bookingTagFilter.addEventListener('change', fetchDailyChartData);
+bookingQueryTypeFilter.addEventListener('change', fetchDailyChartData);
+fetchDailyChartData(); // Initial load
+
 </script>
+
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+    // Initialize the map
+    const map = L.map('heatmap').setView([20, 78], 5); // Centered on India with a zoom level of 5
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '© OpenStreetMap contributors',
+    }).addTo(map);
+
+    // Fetch heatmap and top locations data
+    axios.get('/api/customer-heatmap/')
+        .then(response => {
+            const { heatmap_data, top_locations } = response.data;
+
+            // Prepare heatmap layer data
+            const heatmapPoints = heatmap_data.map(item => {
+                // You need to have pre-fetched lat/lng for zipcodes
+                return [item.latitude, item.longitude, item.total_revenue];
+            });
+
+            // Add heatmap layer to the map
+            L.heatLayer(heatmapPoints, { radius: 25 }).addTo(map);
+
+            // Populate the Top 5 Locations Table
+            const topLocationsTable = document.getElementById('topLocationsTable');
+            let tableHTML = '';
+
+            top_locations.forEach(location => {
+                tableHTML += `
+                    <tr>
+                        <td>${location.zipcode}</td>
+                        <td>${location.total_revenue.toFixed(2)}</td>
+                        <td>${location.total_bookings}</td>
+                        <td>${location.total_passengers}</td>
+                    </tr>
+                `;
+            });
+
+            topLocationsTable.innerHTML = tableHTML;
+        })
+        .catch(error => {
+            console.error('Error fetching heatmap data:', error);
+        });
+});
+</script>
+
 {% endblock %}

@@ -1,7 +1,7 @@
 from django.urls import path
 from . import routes
 from . import api
-from flightdesk.views import basic, dashboard, revision, chat
+from flightdesk.views import basic, dashboard, revision, chat, auth, settings, bookings
 from django.shortcuts import redirect
 
 def redirect_to_login(request):
@@ -13,13 +13,16 @@ urlpatterns = [
 
     # Authentication Routes
     path('login/', routes.login_view, name='login'),
-    path('logout/', routes.logout_view, name='logout'),
+    path('logout/', auth.logout_view, name='logout'),
 
     # Dashboard Routes
-    path('dashboard/', routes.dashboard, name='dashboard'),
+    path('dashboard/', dashboard.dashboard, name='dashboard'),
+    path('dashboard/agent/', dashboard.agent_dashboard, name='agent_dashboard'),
     path('api/call-log-summary/', api.call_log_summary_api, name='call_log_summary_api'),
-    path('api/call-log-chart/', api.call_log_chart_api, name='call_log_chart_api'),
+    path('api/call-log-bar-chart/', api.call_log_bar_chart_api, name='call_log_bar_chart_api'),
     path('api/booking-summary/', api.booking_summary_api, name='booking_summary_api'),
+    path('api/booking-daily-chart/', api.booking_daily_chart_api, name='booking_daily_chart'),
+    path('api/customer-heatmap/', api.customer_heatmap_api, name='customer_heatmap_api'),
     path('api/call-log/download/', dashboard.download_call_log_excel, name='download_call_log_excel'),
     path('api/bookings/download/', dashboard.download_bookings_excel, name='download_bookings_excel'),
 
@@ -62,7 +65,7 @@ urlpatterns = [
     path('billing/<int:pk>/edit/', routes.billing_information_update, name='billing_information_update'),
     path('billing/<int:pk>/delete/', routes.billing_information_delete, name='billing_information_delete'),
 
-    path('bookings/', routes.booking_list, name='booking_list'),
+    path('bookings/', bookings.booking_list, name='booking_list'),
     path('bookings/<int:pk>/', routes.booking_detail, name='booking_detail'),
     path('bookings/<int:pk>/edit/', routes.booking_edit, name='booking_edit'),
     path('booking/delete/<int:pk>/', routes.booking_delete, name='booking_delete'),
@@ -86,11 +89,19 @@ urlpatterns = [
 
     # Revision Routes
     path('revision/', revision.revision_list, name='revision_list'),  # Show revisions
-    path('revision/<int:id>/edit/', revision.revision_edit, name='revision_edit'),  # Edit revision notes
+    path('revision/<int:id>/edit/', revision.revision_edit, name='revision_edit'),
 
     # Chat Routes
     path('chat/private/<int:user_id>/', chat.private_chat, name='private_chat'),
     path('chat/', chat.private_chat, name='private_chat_list'),
     path('chat/check_for_messages/', chat.check_for_messages, name='check_for_messages'),
+    path('get_chat/', chat.get_chat, name='get_chat'),
 
+    path('settings/', settings.settings_view, name='settings'),
+
+    path('revision-categories/', basic.revision_category_list, name='revision_category_list'),
+    path('revision-categories/create/', basic.revision_category_create, name='revision_category_create'),
+    path('revision-categories/<int:pk>/', basic.revision_category_detail, name='revision_category_detail'),
+    path('revision-categories/<int:pk>/update/', basic.revision_category_update, name='revision_category_update'),
+    path('revision-categories/<int:pk>/delete/', basic.revision_category_delete, name='revision_category_delete'),
 ]

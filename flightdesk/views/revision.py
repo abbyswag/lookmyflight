@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
-from flightdesk.models import Revision
+from flightdesk.models import Revision, RevisionCategorySetting
 from django.contrib.auth.decorators import login_required
 from django.template.loader import render_to_string
 from django.contrib.sites.shortcuts import get_current_site
@@ -10,19 +10,23 @@ from flightdesk.forms import RevisionForm
 from django.contrib.auth.decorators import user_passes_test
 
 
-def is_cs_team(user):
-    return user.groups.filter(name='cs_team').exists()
+def is_cs_team_or_supervisor(user):
+    return user.groups.filter(name__in=['cs_team', 'supervisor']).exists()
 
 @login_required
 def revision_list(request):
-    # Filter revisions for cancelled and refund bookings
-    revisions = Revision.objects.filter(subcategory__in=['cancelled', 'refund'])
+    # Fetch the categories dynamically from the database
+    categories = RevisionCategorySetting.objects.values_list('category_name', flat=True)
+    print(categories)
+    
+    # Filter revisions based on the fetched categories
+    revisions = Revision.objects.filter(subcategory__in=categories)
     
     return render(request, 'crm/revision_list.html', {'revisions': revisions})
 
 
 @login_required
-@user_passes_test(is_cs_team)
+@user_passes_test(is_cs_team_or_supervisor)
 def revision_edit(request, id):
     revision = get_object_or_404(Revision, id=id)
     

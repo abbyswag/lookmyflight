@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block title %}Booking{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Bookings</h1>
+
+<!-- Search and Filters -->
+<form method="GET" class="mb-4 flex space-x-4">
+    <!-- Search -->
+    <input type="text" name="search" value="{{ search_query }}" placeholder="Search by customer name or booking ID"
+        class="px-4 py-2 border rounded-lg w-1/3" />
+
+    <!-- Filter by status -->
+    <select name="status" class="px-4 py-2 border rounded-lg w-1/4">
+        <option value="">All Status</option>
+        <option value="initiated" {% if status_filter == 'initiated' %}selected{% endif %}>Initiated</option>
+        <option value="authorizing" {% if status_filter == 'authorizing' %}selected{% endif %}>Authorizing</option>
+        <option value="allocating" {% if status_filter == 'allocating' %}selected{% endif %}>Allocating</option>
+        <option value="cleared" {% if status_filter == 'cleared' %}selected{% endif %}>Cleared</option>
+        <option value="confirmed" {% if status_filter == 'confirmed' %}selected{% endif %}>Confirmed</option>
+    </select>
+
+    <!-- Filter by date range -->
+    <select name="date_filter" class="px-4 py-2 border rounded-lg w-1/4">
+        <option value="">All Dates</option>
+        <option value="last_week" {% if date_filter == 'last_week' %}selected{% endif %}>Last Week</option>
+        <option value="last_month" {% if date_filter == 'last_month' %}selected{% endif %}>Last Month</option>
+    </select>
+
+    <!-- Custom Date Range -->
+    <!-- <input type="date" name="start_date" value="{{ start_date }}" class="px-4 py-2 border rounded-lg" /> -->
+    <!-- <input type="date" name="end_date" value="{{ end_date }}" class="px-4 py-2 border rounded-lg" /> -->
+
+    <!-- Submit -->
+    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Apply</button>
+</form>
+
+<!-- Bookings Table -->
+<div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking ID</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            {% for booking in bookings %}
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap">{{ booking.booking_id }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ booking.call_log.name }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                    {% if booking.status == 'initiated' %}
+                        bg-yellow-200 text-yellow-800
+                    {% elif booking.status == 'authorizing' %}
+                        bg-blue-200 text-blue-800
+                    {% elif booking.status == 'allocating' %}
+                        bg-green-200 text-green-800
+                    {% elif booking.status == 'cleared' %}
+                        bg-teal-200 text-teal-800
+                    {% elif booking.status == 'confirmed' %}
+                        bg-gray-200 text-gray-800
+                    {% endif %}">
+                        {{ booking.status }}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ booking.created_at }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <a href="{% url 'booking_detail' booking.pk %}" class="text-blue-600 hover:underline">View</a>
+                    <a href="{% url 'booking_edit' booking.pk %}" class="ml-2 text-green-600 hover:underline">Edit</a>
+                    {% if is_supervisor %}
+                    <a href="{% url 'booking_delete' booking.pk %}" class="ml-2 text-red-600 hover:underline">Delete</a>
+                    {% endif %}
+                    {% if booking.status == 'confirmed' %}
+                        <a href="{% url 'create_email' booking.booking_id %}" class="ml-2 text-purple-600 hover:underline">Mail</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+<div class="mt-4 flex justify-between items-center">
+    <div>
+        <p class="text-sm text-gray-600">
+            Showing {{ bookings.start_index }} to {{ bookings.end_index }} of {{ bookings.paginator.count }} bookings
+        </p>
+    </div>
+    <div>
+        <nav class="inline-flex space-x-2">
+            {% if bookings.has_previous %}
+            <a href="?page={{ bookings.previous_page_number }}" class="px-3 py-1 bg-gray-200 text-gray-800 rounded">Previous</a>
+            {% endif %}
+            {% for page in bookings.paginator.page_range %}
+                {% if page == bookings.number %}
+                <span class="px-3 py-1 bg-blue-600 text-white rounded">{{ page }}</span>
+                {% else %}
+                <a href="?page={{ page }}" class="px-3 py-1 bg-gray-200 text-gray-800 rounded">{{ page }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if bookings.has_next %}
+            <a href="?page={{ bookings.next_page_number }}" class="px-3 py-1 bg-gray-200 text-gray-800 rounded">Next</a>
+            {% endif %}
+        </nav>
+    </div>
+</div>
+{% endblock %}

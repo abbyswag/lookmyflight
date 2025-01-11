@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto mt-10">
+    <h1 class="text-2xl font-bold mb-6">Category Details</h1>
+    <p><strong>Category Name:</strong> {{ category.category_name }}</p>
+    <a href="{% url 'revision_category_update' category.id %}" class="text-green-600 hover:underline">Edit</a> |
+    <a href="{% url 'revision_category_delete' category.id %}" class="text-red-600 hover:underline">Delete</a>
+    <br><br>
+    <a href="{% url 'revision_category_list' %}" class="text-gray-600 hover:underline">Back to List</a>
+</div>
+{% endblock %}

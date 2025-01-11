@@ -1,9 +1,15 @@
 from django import forms
-from .models import CallLog, Campaign, BillingInformation, Booking, Email, Query, Airline, Revision
+from .models import CallLog, Campaign, BillingInformation, Booking, Email, Query, Airline, Revision, RevisionCategorySetting
 from django.contrib.auth.models import User, Group
 from django.core.exceptions import ValidationError
 from django_summernote.widgets import SummernoteWidget
 from bs4 import BeautifulSoup
+
+
+class RevisionCategoryForm(forms.ModelForm):
+    class Meta:
+        model = RevisionCategorySetting
+        fields = ['category_name']
 
 class CallLogForm(forms.ModelForm):
     class Meta:
@@ -23,7 +29,7 @@ class CampaignForm(forms.ModelForm):
 
 class StaffCreationForm(forms.ModelForm):
     phone_number = forms.CharField(max_length=15)
-    group = forms.ChoiceField(choices=[('agent', 'Agent'), ('supervisor', 'Supervisor')])
+    group = forms.ChoiceField(choices=[('agent', 'Agent'), ('supervisor', 'Supervisor'), ('cs_team', 'CS Team')])
     
     class Meta:
         model = User

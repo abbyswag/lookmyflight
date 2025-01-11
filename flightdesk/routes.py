@@ -19,7 +19,11 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect('dashboard')
+            # Check group and redirect accordingly
+            if user.groups.filter(name='agent').exists():
+                return redirect('agent_dashboard')  # Redirect to the agent dashboard
+            else:
+                return redirect('dashboard')  # Redirect to the general dashboard
         else:
             return render(request, 'crm/login.html', {'error': 'Invalid credentials'})
     return render(request, 'crm/login.html')
@@ -68,7 +72,7 @@ def staff_create(request):
 @login_required
 @user_passes_test(is_supervisor)
 def staff_list(request):
-    staff = User.objects.filter(groups__name__in=['agent', 'supervisor'])
+    staff = User.objects.filter(groups__name__in=['agent', 'supervisor', 'cs_team'])
     return render(request, 'crm/staff_list.html', {'staff': staff})
 
 

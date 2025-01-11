@@ -139,6 +139,9 @@ def download_bookings_excel(request):
 @login_required
 def dashboard(request):
     user = request.user
+    if is_agent(user):
+        return redirect('agent_dashboard')
+
     is_supervisor = user.groups.filter(name='supervisor').exists()
 
     tags = Campaign.objects.all()
@@ -152,3 +155,89 @@ def dashboard(request):
 
     return render(request, 'crm/dashboard.html', context)
 
+
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.db.models import Count
+from datetime import datetime, timedelta
+
+@login_required
+def agent_dashboard(request):
+    user = request.user
+
+    # Fetch the current month
+    today = datetime.now()
+    start_of_month = today.replace(day=1)
+    end_of_month = today.replace(day=1) + timedelta(days=32)
+    end_of_month = end_of_month.replace(day=1) - timedelta(days=1)
+
+    # Filter bookings and call logs for the current month by the logged-in user
+    bookings = Booking.objects.filter(
+        added_by=user,
+        created_at__date__gte=start_of_month,
+        created_at__date__lte=end_of_month
+    )
+    call_logs = CallLog.objects.filter(
+        added_by=user,
+        call_date__date__gte=start_of_month,
+        call_date__date__lte=end_of_month
+    )
+
+    # Prepare days in the current month
+    days_in_month = list(range(1, end_of_month.day + 1))
+
+    # Booking stats
+    statuses = dict(Booking.STATUS_CHOICES)
+    status_counts = [
+        {
+            'status_code': status,
+            'status_label': statuses[status],
+            'counts': [0] * end_of_month.day  # Initialize counts for each day
+        }
+        for status in statuses.keys()
+    ]
+    for booking in bookings:
+        day_of_month = booking.created_at.day
+        for status in status_counts:
+            if status['status_code'] == booking.status:
+                status['counts'][day_of_month - 1] += 1
+
+    booking_summary = {
+        'by_status': bookings.values('status').annotate(count=Count('id')),
+        'total': bookings.count(),
+    }
+
+    for entry in booking_summary['by_status']:
+        entry['status_label'] = statuses.get(entry['status'], "Unknown")
+
+    # Call log stats
+    tags = dict(CallLog.TAG_CHOICES)
+    tag_counts = [
+        {
+            'tag_code': tag,
+            'tag_label': tags[tag],
+            'counts': [0] * end_of_month.day  # Initialize counts for each day
+        }
+        for tag in tags.keys()
+    ]
+    for call_log in call_logs:
+        day_of_month = call_log.call_date.day
+        for tag in tag_counts:
+            if tag['tag_code'] == call_log.tag.code:
+                tag['counts'][day_of_month - 1] += 1
+
+    call_log_summary = {
+        'by_tag': call_logs.values('tag__code').annotate(count=Count('id')),
+        'by_conversion': call_logs.values('converted').annotate(count=Count('id')),
+        'total': call_logs.count(),
+    }
+
+    context = {
+        'days_in_month': days_in_month,
+        'status_counts': status_counts,
+        'tag_counts': tag_counts,
+        'booking_summary': booking_summary,
+        'call_log_summary': call_log_summary,
+    }
+
+    return render(request, 'dashboard/agent_dashboard.html', context)

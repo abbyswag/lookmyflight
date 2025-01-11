@@ -235,14 +235,15 @@ def call_log_summary_api(request):
         'query_types': [query_type.code for query_type in query_types],
     })
 
+
 @require_GET
-def call_log_chart_api(request):
-    chart_type = request.GET.get('type', 'tag')
+@login_required
+def call_log_bar_chart_api(request):
     filter_type = request.GET.get('filter', 'today')
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
 
-    today = timezone.now().date()
+    today = now().date()
     if filter_type == 'today':
         start_date = today
         end_date = today
@@ -252,26 +253,37 @@ def call_log_chart_api(request):
     elif filter_type == 'lastMonth':
         start_date = today - timedelta(days=30)
         end_date = today
-    elif filter_type == 'custom':
-        start_date = timezone.datetime.strptime(start_date, "%Y-%m-%d").date()
-        end_date = timezone.datetime.strptime(end_date, "%Y-%m-%d").date()
+    elif filter_type == 'custom' and start_date and end_date:
+        start_date = now().strptime(start_date, "%Y-%m-%d").date()
+        end_date = now().strptime(end_date, "%Y-%m-%d").date()
 
+    # Get all call logs within the specified range
     call_logs = CallLog.objects.filter(call_date__date__range=[start_date, end_date])
 
-    if chart_type == 'tag':
-        data = call_logs.values('tag__code').annotate(count=Count('id'))
-        labels = [item['tag__code'] for item in data]
-        counts = [item['count'] for item in data]
-    else:  # query_type
-        data = call_logs.values('query_type__code').annotate(count=Count('id'))
-        labels = [item['query_type__code'] for item in data]
-        counts = [item['count'] for item in data]
+    # Aggregate data by tag
+    tag_data = (
+        call_logs.values('tag__code')
+        .annotate(count=Count('id'))
+        .order_by('-count')
+    )
 
-    return JsonResponse({
-        'labels': labels,
-        'data': counts,
-    })
+    # Aggregate data by query type
+    query_type_data = (
+        call_logs.values('query_type__code')
+        .annotate(count=Count('id'))
+        .order_by('-count')
+    )
 
+    response_data = {
+        'tags': list(tag_data),
+        'query_types': list(query_type_data),
+    }
+
+    return JsonResponse(response_data)
+
+
+
+# Bookings API
 @require_GET
 @login_required
 def booking_summary_api(request):
@@ -323,3 +335,91 @@ def booking_summary_api(request):
     ]
 
     return JsonResponse(result, safe=False)
+
+
+from django.utils.timezone import now
+
+
+@require_GET
+@login_required
+def booking_daily_chart_api(request):
+    filter_type = request.GET.get('filter', 'today')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    today = now().date()
+    if filter_type == 'today':
+        start_date = today
+        end_date = today
+    elif filter_type == 'lastWeek':
+        start_date = today - timedelta(days=7)
+        end_date = today
+    elif filter_type == 'lastMonth':
+        start_date = today - timedelta(days=30)
+        end_date = today
+    elif filter_type == 'custom' and start_date and end_date:
+        start_date = now().strptime(start_date, "%Y-%m-%d").date()
+        end_date = now().strptime(end_date, "%Y-%m-%d").date()
+
+    # Get all bookings within the specified range
+    bookings = Booking.objects.filter(created_at__date__range=[start_date, end_date])
+
+    # Initialize data
+    date_range = [start_date + timedelta(days=i) for i in range((end_date - start_date).days + 1)]
+    data = {
+        'dates': [date.strftime("%Y-%m-%d") for date in date_range],
+        'daily_bookings': [],
+        'daily_passengers': [],
+        'daily_revenue': [],
+    }
+
+    # Aggregate data for each date
+    for date in date_range:
+        day_bookings = bookings.filter(created_at__date=date)
+        daily_booking_count = day_bookings.count()
+        daily_passenger_count = day_bookings.aggregate(count=Count('passenger'))['count'] or 0
+        daily_revenue = day_bookings.aggregate(total=Sum('mco'))['total'] or 0
+
+        data['daily_bookings'].append(daily_booking_count)
+        data['daily_passengers'].append(daily_passenger_count)
+        data['daily_revenue'].append(float(daily_revenue))  # Ensure JSON serializable
+
+    return JsonResponse(data)
+
+
+
+from django.db.models import Sum, Count
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def customer_heatmap_api(request):
+    # Aggregate data by zipcode
+    data = (
+        BillingInformation.objects.values('zipcode')
+        .annotate(
+            total_revenue=Sum('booking__mco'),
+            total_bookings=Count('booking'),
+            total_passengers=Sum('booking__passenger__id'),  # Adjust based on Passenger model relation
+        )
+        .exclude(zipcode=None)  # Exclude entries with missing zipcodes
+        .order_by('-total_revenue')
+    )
+
+    # Prepare heatmap data
+    heatmap_data = []
+    for item in data:
+        heatmap_data.append({
+            'zipcode': item['zipcode'],
+            'total_revenue': item['total_revenue'],
+            'total_bookings': item['total_bookings'],
+            'total_passengers': item['total_passengers'],
+        })
+
+    # Top 5 zipcodes for the summary table
+    top_locations = heatmap_data[:5]
+
+    return JsonResponse({
+        'heatmap_data': heatmap_data,
+        'top_locations': top_locations,
+    })

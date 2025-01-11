@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto p-6">
+    <!-- Graphs -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <!-- Booking Line Chart -->
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Booking Trends</h3>
+            <canvas id="bookingLineGraph" width="400" height="200"></canvas>
+        </div>
+
+        <!-- Call Log Bar Chart -->
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Call Log Trends</h3>
+            <canvas id="callLogBarChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Summary Tables -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Booking Summary -->
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Booking Summary</h3>
+            <table class="min-w-full bg-white">
+                <thead>
+                    <tr>
+                        <th class="py-2 px-4 border-b">Status</th>
+                        <th class="py-2 px-4 border-b">Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in booking_summary.by_status %}
+                    <tr>
+                        <td class="py-2 px-4 border-b">{{ entry.status_label }}</td>
+                        <td class="py-2 px-4 border-b">{{ entry.count }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr>
+                        <td class="py-2 px-4 font-bold">Total</td>
+                        <td class="py-2 px-4 font-bold">{{ booking_summary.total }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Call Log Summary -->
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Call Log Summary</h3>
+            <table class="min-w-full bg-white">
+                <thead>
+                    <tr>
+                        <th class="py-2 px-4 border-b">Tag</th>
+                        <th class="py-2 px-4 border-b">Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in call_log_summary.by_tag %}
+                    <tr>
+                        <td class="py-2 px-4 border-b">{{ entry.tag__code }}</td>
+                        <td class="py-2 px-4 border-b">{{ entry.count }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr>
+                        <td class="py-2 px-4 font-bold">Total</td>
+                        <td class="py-2 px-4 font-bold">{{ call_log_summary.total }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Booking Line Graph
+        const bookingCtx = document.getElementById('bookingLineGraph').getContext('2d');
+        new Chart(bookingCtx, {
+            type: 'line',
+            data: {
+                labels: {{ days_in_month|safe }},
+                datasets: [
+                    {% for status in status_counts %}
+                    {
+                        label: "{{ status.status_label }}",
+                        data: {{ status.counts|safe }},
+                        borderColor: '#' + Math.floor(Math.random()*16777215).toString(16),
+                        tension: 0.4,
+                    },
+                    {% endfor %}
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { title: { display: true, text: 'Days of the Month' } },
+                    y: { title: { display: true, text: 'Bookings Count' }, beginAtZero: true }
+                }
+            }
+        });
+
+        // Call Log Bar Chart
+        const callLogCtx = document.getElementById('callLogBarChart').getContext('2d');
+        new Chart(callLogCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ days_in_month|safe }},
+                datasets: [
+                    {% for tag in tag_counts %}
+                    {
+                        label: "{{ tag.tag_label }}",
+                        data: {{ tag.counts|safe }},
+                        backgroundColor: '#' + Math.floor(Math.random()*16777215).toString(16),
+                    },
+                    {% endfor %}
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { title: { display: true, text: 'Days of the Month' } },
+                    y: { title: { display: true, text: 'Call Logs Count' }, beginAtZero: true }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.db.models import Q
 import os
 from .utils import send_email, save_email, create_auth_draft
-from .models import Passenger, BillingInformation, CallLog, Email, EmailAttachtment, Campaign
+from .models import Passenger, BillingInformation, CallLog, Email, EmailAttachtment, Campaign, PrivateChat, PrivateMessage
 
 class CustomerNameRegexFilter(admin.SimpleListFilter):
   title = 'name'
@@ -272,3 +272,26 @@ class CampaignAdmin(admin.ModelAdmin):
 admin.site.register(Campaign, CampaignAdmin)
 admin.site.register(Email, EmailAdmin)
 admin.site.register(CallLog, CallLogAdmin)
+
+
+@admin.register(PrivateChat)
+class PrivateChatAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user1', 'user2', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('user1__username', 'user2__username')
+    ordering = ('-created_at',)
+    readonly_fields = ('created_at',)
+
+
+@admin.register(PrivateMessage)
+class PrivateMessageAdmin(admin.ModelAdmin):
+    list_display = ('id', 'chat', 'sender', 'content_snippet', 'timestamp', 'read')
+    list_filter = ('read', 'timestamp')
+    search_fields = ('sender__username', 'chat__user1__username', 'chat__user2__username', 'content')
+    ordering = ('-timestamp',)
+    readonly_fields = ('timestamp',)
+
+    def content_snippet(self, obj):
+        # Show the first 50 characters of the content
+        return obj.content[:50] + ("..." if len(obj.content) > 50 else "")
+    content_snippet.short_description = 'Message Content'

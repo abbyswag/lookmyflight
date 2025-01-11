@@ -2,25 +2,87 @@
 
 {% block content %}
     <div class="max-w-2xl mx-auto mt-10 px-4 py-6">
-        <h2 class="text-2xl font-semibold text-gray-800 mb-6">Select a User to Chat With</h2>
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-semibold text-gray-800">Select a User to Chat With</h2>
+            {% if is_supervisor %}
+                <button id="get-chat-button" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                    Get Chat
+                </button>
+            {% endif %}
+        </div>
         <ul class="space-y-4">
             {% for user in users %}
                 <li>
                     <a href="{% url 'private_chat' user.id %}" class="block bg-white p-4 rounded-lg shadow-lg hover:shadow-xl transition duration-200 ease-in-out hover:bg-gray-100">
-                        <div class="flex items-center space-x-4">
-                            <!-- User Profile Picture -->
-                            <div class="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center text-white font-semibold">
-                                {{ user.username|slice:":1" }}
+                        <div class="flex items-center justify-between space-x-4">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center text-white font-semibold">
+                                    {{ user.username|slice:":1" }}
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-medium text-gray-700">{{ user.username }}</h3>
+                                    {% with unread_data|lookup:user.id as data %}
+                                        {% if data.last_message %}
+                                            <p class="text-sm text-gray-500">
+                                                {{ data.last_message.content }}
+                                            </p>
+                                        {% else %}
+                                            <p class="text-sm text-gray-500">No unread messages</p>
+                                        {% endif %}
+                                    {% endwith %}
+                                </div>
                             </div>
-                            <!-- User Info -->
-                            <div>
-                                <h3 class="text-lg font-medium text-gray-700">{{ user.username }}</h3>
-                                <p class="text-sm text-gray-500">Click to start chatting</p>
-                            </div>
+                            {% with unread_data|lookup:user.id as data %}
+                                {% if data.count > 0 %}
+                                    <div class="bg-red-500 text-white text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center">
+                                        {{ data.count }}
+                                    </div>
+                                {% endif %}
+                            {% endwith %}
                         </div>
                     </a>
                 </li>
             {% endfor %}
         </ul>
+
+        <!-- Get Chat Modal -->
+        <div id="get-chat-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden">
+            <div class="bg-white rounded-lg p-6 w-96">
+                <h3 class="text-lg font-semibold mb-4">View Chat Between Users</h3>
+                <form id="get-chat-form" method="POST" action="{% url 'get_chat' %}">
+                    {% csrf_token %}
+                    <label class="block text-sm font-medium text-gray-700">User 1:</label>
+                    <select name="user1_id" class="w-full border rounded-lg p-2 mb-4">
+                        {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.username }}</option>
+                        {% endfor %}
+                    </select>
+                    <label class="block text-sm font-medium text-gray-700">User 2:</label>
+                    <select name="user2_id" class="w-full border rounded-lg p-2 mb-4">
+                        {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.username }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="flex justify-end">
+                        <button type="button" id="close-modal" class="bg-gray-300 px-4 py-2 rounded-lg mr-2">Cancel</button>
+                        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg">View Chat</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
     </div>
+    <script>
+        const getChatButton = document.getElementById('get-chat-button');
+        const modal = document.getElementById('get-chat-modal');
+        const closeModal = document.getElementById('close-modal');
+
+        getChatButton.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+        });
+
+        closeModal.addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
+    </script>
 {% endblock %}

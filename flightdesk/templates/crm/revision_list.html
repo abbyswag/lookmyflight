@@ -9,6 +9,7 @@
             <tr>
                 <th class="p-4 border-b">Booking ID</th>
                 <th class="p-4 border-b">Subcategory</th>
+                <th class="p-4 border-b">Status</th>
                 <th class="p-4 border-b">Customer</th>
                 <th class="p-4 border-b">Actions</th>
             </tr>
@@ -18,6 +19,7 @@
                 <tr>
                     <td class="p-4 border-b">{{ revision.booking.booking_id }}</td>
                     <td class="p-4 border-b">{{ revision.subcategory }}</td>
+                    <td class="p-4 border-b">{{ revision.booking.status }}</td>
                     <td class="p-4 border-b">{{ revision.booking.call_log.name|default:"Not available" }}</td>
                     <td class="p-4 border-b">
                         <!-- Edit Revision Note Link -->

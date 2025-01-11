@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto mt-10">
+    <h1 class="text-2xl font-bold mb-6">Manage Revision Categories</h1>
+
+    <form method="POST" class="mb-6">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Add Category</button>
+    </form>
+
+    <h2 class="text-xl font-semibold mb-4">Current Categories</h2>
+    <ul class="list-disc pl-5">
+        {% for category in categories %}
+            <li class="mb-2">
+                {{ category.category_name }}
+                <!-- Optionally, add a delete button for each category -->
+                <form method="POST" action="{% url 'delete_revision_category' category.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="text-red-500 hover:underline">Delete</button>
+                </form>
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

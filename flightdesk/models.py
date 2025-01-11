@@ -185,26 +185,30 @@ class Email(models.Model):
 
 
 class Revision(models.Model):
-    STATUS_CHOICES = (
-        ('cancelled', 'Cancelled'),
-        ('refund', 'Refund'),
-    )
-    
     booking = models.ForeignKey('Booking', on_delete=models.CASCADE)
-    subcategory = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    subcategory = models.CharField(max_length=20)  # No static choices here
     note = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     def __str__(self):
         return f"Revision for {self.booking.booking_id} - {self.subcategory}"
-    
 
+    @staticmethod
+    def get_dynamic_status_choices():
+        # Fetch categories from RevisionCategorySetting
+        return [(cat.category_name, cat.category_name) for cat in RevisionCategorySetting.objects.all()]
+
+    
 
 @receiver(post_save, sender=Booking)
 def create_revision(sender, instance, created, **kwargs):
-    if instance.subcategory in ['cancelled', 'refund']:
-        # Create a revision record when a booking has 'cancelled' or 'refund' subcategory
+    # Fetch valid categories dynamically
+    valid_categories = RevisionCategorySetting.objects.values_list('category_name', flat=True)
+
+    if instance.subcategory in valid_categories:
+        # Create a revision record when a booking has a valid subcategory
         Revision.objects.get_or_create(booking=instance, subcategory=instance.subcategory)
+
 
 
 @receiver(post_save, sender=Booking)
@@ -244,3 +248,10 @@ class PrivateMessage(models.Model):
 
     def __str__(self):
         return f"Message from {self.sender.username} to {self.chat.user2.username if self.sender != self.chat.user1 else self.chat.user1.username}"
+
+
+class RevisionCategorySetting(models.Model):
+    category_name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.category_name
