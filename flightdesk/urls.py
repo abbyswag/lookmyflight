@@ -12,7 +12,7 @@ urlpatterns = [
     path('', redirect_to_login, name='root'),
 
     # Authentication Routes
-    path('login/', routes.login_view, name='login'),
+    path('login/', auth.login_view, name='login'),
     path('logout/', auth.logout_view, name='logout'),
 
     # Dashboard Routes
