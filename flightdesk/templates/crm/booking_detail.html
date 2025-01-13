@@ -164,7 +164,11 @@
         {% endfor %}
     </div>
     <div class="flex justify-between items-center px-4 py-4 sm:px-6">
-        <a href="{% url 'billing_info' booking.pk %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        <a href="{% url 'billing_info' booking.pk %}" 
+        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        {% if not request.user|has_group:"agent" and not request.user|has_group:"supervisor" %} 
+            style="display: none;" 
+        {% endif %}>
             Add New Card Information
         </a>
         {% if is_supervisor %}
@@ -197,7 +201,12 @@
     </div>
 </div>
 
-<a href="{% url 'booking_edit' booking.pk %}" class="mt-4 inline-block bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+<a href="{% url 'booking_edit' booking.pk %}" 
+   class="mt-4 inline-block bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+   {% if not request.user|has_group:"agent" and not request.user|has_group:"supervisor" %} 
+       style="display: none;" 
+   {% endif %}>
     Edit Booking
 </a>
+
 {% endblock %}

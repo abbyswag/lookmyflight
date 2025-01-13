@@ -1,0 +1,660 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% if is_supervisor %}
+<!-- Time Filter Section -->
+<div class="bg-white p-6 rounded-lg shadow-lg mb-6 col-span-1 md:col-span-3 mt-6">
+    <h3 class="text-2xl font-semibold text-gray-800">Filter Data by Time for the Plots</h3>
+    <div class="flex space-x-4 mt-4">
+        <select id="timeFilter" class="mt-1 block py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            <option value="thisMonth">This Month</option>
+            <option value="thisWeek">This Week</option>
+            <option value="lastMonth">Last Month</option>
+            <option value="thisQuarter">This Quarter</option>
+        </select>
+    </div>
+</div>
+
+
+<!-- Plots Section -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Plot 1: Bar Chart for MCO by Category, Status, and Tag -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h3 class="text-2xl font-semibold text-gray-800">Booking MCO by Category, Status, and Tag</h3>
+        <div class="flex space-x-4 mb-4">
+            <select id="mcoFilter" class="mt-1 block py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <option value="call_log_tag">Call Log Tag</option>
+                <option value="status">Booking Status</option>
+                <option value="agents">Agent</option>
+                <option value="category">Category</option>
+            </select>
+        </div>
+        <canvas id="mcoBarChart"></canvas>
+    </div>
+
+    <!-- Plot 2: Line Chart for Bookings and Passengers -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h3 class="text-2xl font-semibold text-gray-800">Bookings and Passengers Over Time</h3>
+        <div class="flex space-x-4 mb-4">
+            <select id="callLogTagFilter" class="mt-1 block py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <option value="">All Tags</option>
+                {% for tag in call_log_tags %}
+                    <option value="{{ tag.code }}">{{ tag.code }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <canvas id="bookingsLineChart"></canvas>
+    </div>
+
+    <!-- Plot 3: Pie Chart for Call Log Count by Tag, Query, and Agent -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h3 class="text-2xl font-semibold text-gray-800">Call Log Count by Tag, Query, and Agent</h3>
+        <div class="flex space-x-4 mb-4">
+            <select id="callLogFilter" class="mt-1 block py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <option value="tag">By Tag</option>
+                <option value="query">By Query Type</option>
+                <option value="agent">By Agent</option>
+            </select>
+        </div>
+        <canvas id="callLogPieChart"></canvas>
+    </div>
+
+    <!-- Plot 4: Heatmap for Customers by Call Log Tag -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h3 class="text-2xl font-semibold text-gray-800">Customer Heatmap by Call Log Tag</h3>
+        <br>
+        <div id="bookingMap" style="height: 30rem; width: 100%; z-index: 30;"></div>
+    </div>
+</div>
+{% endif %}
+
+
+{% if is_supervisor %}
+<div class="bg-white p-6 rounded-lg shadow-lg mb-6 col-span-1 md:col-span-3 mt-6">
+    <div class="flex justify-between align-center mb-4">
+        <h3 class="text-2xl font-semibold text-gray-800">Booking Summary</h3>
+        <a href="{% url 'download_bookings_excel' %}?filter={{ dateFilter.value }}&start_date={{ startDate }}&end_date={{ endDate }}" 
+        class="bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700">
+            Download Excel
+        </a>
+    </div>
+     
+    <!-- Filters -->
+    <div class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Date Filter -->
+        <div>
+            <label for="bookingDateFilter" class="block text-sm font-medium text-gray-700 mb-2">Filter by Date:</label>
+            <select id="bookingDateFilter" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <option value="lastWeek">Last Week</option>
+                <option value="today">Today</option>
+                <option value="lastMonth">Last Month</option>
+                <option value="custom">Custom Date Range</option>
+            </select>
+            <div id="bookingCustomDateRange" class="mt-3 hidden">
+                <input type="date" id="bookingStartDate" class="mr-2 py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <input type="date" id="bookingEndDate" class="py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            </div>
+        </div>
+
+        <!-- Tag Filter -->
+        <div>
+            <label for="bookingTagFilter" class="block text-sm font-medium text-gray-700 mb-2">Filter by Tag:</label>
+            <select id="bookingTagFilter" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <option value="">All Tags</option>
+                {% for tag in tags %}
+                    <option value="{{ tag.code }}">{{ tag.code }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Query Type Filter -->
+        <div>
+            <label for="bookingQueryTypeFilter" class="block text-sm font-medium text-gray-700 mb-2">Filter by Query Type:</label>
+            <select id="bookingQueryTypeFilter" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <option value="">All Query Types</option>
+                {% for query_type in query_types %}
+                    <option value="{{ query_type.code }}">{{ query_type.code }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <!-- Booking Summary Table -->
+    <div id="bookingSummaryTableContainer" class="overflow-x-auto">
+        <!-- Table content will be dynamically updated here -->
+    </div>
+</div>
+{% endif %}
+
+
+{% if is_supervisor %}
+<div class="bg-white p-6 rounded-lg shadow-lg mb-6 col-span-1 md:col-span-3 mt-6">
+    <div class="flex justify-between mb-4">
+        <h3 class="text-2xl font-semibold text-gray-800">Call Log Summary</h3>
+        <a href="{% url 'download_call_log_excel' %}?filter={{ dateFilter.value }}&start_date={{ startDate }}&end_date={{ endDate }}" 
+        class="bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700">
+            Download Excel
+        </a>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="mb-6">
+        <label for="dateFilter" class="block text-sm font-medium text-gray-700 mb-2">Filter by Date:</label>
+        <select id="dateFilter" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            <option value="lastWeek">Last Week</option>
+            <option value="today">Today</option>
+            <option value="lastMonth">Last Month</option>
+            <option value="custom">Custom Date Range</option>
+        </select>
+        <div id="customDateRange" class="mt-3 hidden">
+            <input type="date" id="startDate" class="mr-2 py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            <input type="date" id="endDate" class="py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+        </div>
+    </div>
+    <div id="tableContainer" class="lg:w-full overflow-x-auto">
+        <!-- Table content will be dynamically updated here -->
+    </div>
+</div>
+{% endif %}
+
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
+<!-- Plot 1 -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+    // Set up the chart
+    const ctx1 = document.getElementById('mcoBarChart').getContext('2d');
+    let mcoBarChart = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: [], // Labels will be populated dynamically
+            datasets: [{
+                label: 'Total MCO',
+                data: [],  // Data will be populated dynamically
+                backgroundColor: '#36A2EB',
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Categories/Tags/Agents/Status',
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'MCO Value',
+                    },
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Function to get the selected time filter value
+    function getTimeFilter() {
+        return document.getElementById('timeFilter').value;
+    }
+
+    // Function to fetch MCO data based on the selected filter
+    function fetchMCOData(filterType, timeFilter) {
+        fetch(`/api/fetch-mco-data/?filter=${filterType}&time_filter=${timeFilter}`)
+            .then(response => response.json())
+            .then(data => {
+                // Update chart data
+                mcoBarChart.data.labels = data.labels;
+                mcoBarChart.data.datasets[0].data = data.mco_values;
+                mcoBarChart.update();
+            })
+            .catch(error => console.error('Error fetching MCO data:', error));
+    }
+
+    // Initial data load for default filter (call_log_tag) and time filter (thisMonth)
+    fetchMCOData('call_log_tag', 'thisMonth');
+
+    // Update chart data when filter changes
+    const mcoFilter = document.getElementById('mcoFilter');
+    const timeFilter = document.getElementById('timeFilter');
+    
+    // Event listener for MCO filter change
+    mcoFilter.addEventListener('change', function() {
+        const selectedFilter = mcoFilter.value;
+        const selectedTimeFilter = getTimeFilter();
+        fetchMCOData(selectedFilter, selectedTimeFilter);
+    });
+
+    // Event listener for time filter change
+    timeFilter.addEventListener('change', function() {
+        const selectedTimeFilter = getTimeFilter();
+        const selectedMcoFilter = mcoFilter.value;
+        fetchMCOData(selectedMcoFilter, selectedTimeFilter);
+    });
+});
+</script>
+
+<!-- Plot 2 -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    // Set up the line chart
+    const ctx2 = document.getElementById('bookingsLineChart').getContext('2d');
+    let bookingsLineChart = new Chart(ctx2, {
+        type: 'line',
+        data: {
+            labels: [], // Will be populated with dates
+            datasets: [
+                {
+                    label: 'Bookings',
+                    data: [],
+                    borderColor: '#36A2EB',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Passengers',
+                    data: [],
+                    borderColor: '#FF6384',
+                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Bookings and Passengers Trend'
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
+            scales: {
+                x: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                },
+                y: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Count'
+                    },
+                    beginAtZero: true
+                }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            }
+        }
+    });
+
+    // Function to fetch booking and passenger data
+    function fetchBookingsData(timeFilter, tagFilter) {
+        fetch(`/api/fetch-bookings-and-passengers/?time_filter=${timeFilter}&tag=${tagFilter}`)
+            .then(response => response.json())
+            .then(data => {
+                // Update chart data
+                bookingsLineChart.data.labels = data.dates;
+                bookingsLineChart.data.datasets[0].data = data.booking_counts;
+                bookingsLineChart.data.datasets[1].data = data.passenger_counts;
+                bookingsLineChart.update();
+            })
+            .catch(error => console.error('Error fetching bookings data:', error));
+    }
+
+    // Get filter elements
+    const timeFilter = document.getElementById('timeFilter');
+    const callLogTagFilter = document.getElementById('callLogTagFilter');
+
+    // Initial data load
+    fetchBookingsData(timeFilter.value, callLogTagFilter.value);
+
+    // Event listeners for filter changes
+    timeFilter.addEventListener('change', function() {
+        fetchBookingsData(timeFilter.value, callLogTagFilter.value);
+    });
+
+    callLogTagFilter.addEventListener('change', function() {
+        fetchBookingsData(timeFilter.value, callLogTagFilter.value);
+    });
+});
+</script>
+
+<!-- Plot 3 -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    // Set up the pie chart
+    const ctx3 = document.getElementById('callLogPieChart').getContext('2d');
+    let callLogPieChart = new Chart(ctx3, {
+        type: 'pie',
+        data: {
+            labels: [], // Labels will be populated dynamically
+            datasets: [{
+                data: [],  // Data will be populated dynamically
+                backgroundColor: [
+                    '#FF6384',
+                    '#36A2EB',
+                    '#FFCE56',
+                    '#4BC0C0',
+                    '#9966FF',
+                    '#FF9F40',
+                    '#FF99CC',
+                    '#99CCFF'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                },
+                title: {
+                    display: true,
+                    text: 'Call Log Distribution'
+                }
+            }
+        }
+    });
+
+    // Function to get the selected time filter value
+    function getTimeFilter() {
+        return document.getElementById('timeFilter').value;
+    }
+
+    // Function to fetch Call Log data based on the selected filter
+    function fetchCallLogData(filterType, timeFilter) {
+        fetch(`/api/fetch-call-log-data/?filter=${filterType}&time_filter=${timeFilter}`)
+            .then(response => response.json())
+            .then(data => {
+                // Update chart data
+                callLogPieChart.data.labels = data.labels;
+                callLogPieChart.data.datasets[0].data = data.values;
+                callLogPieChart.update();
+            })
+            .catch(error => console.error('Error fetching call log data:', error));
+    }
+
+    // Initial data load for default filter (tag)
+    fetchCallLogData('tag', 'thisMonth');
+
+    // Event listeners for filter changes
+    const callLogFilter = document.getElementById('callLogFilter');
+    const timeFilter = document.getElementById('timeFilter');
+
+    callLogFilter.addEventListener('change', function() {
+        const selectedFilter = callLogFilter.value;
+        const selectedTimeFilter = getTimeFilter();
+        fetchCallLogData(selectedFilter, selectedTimeFilter);
+    });
+
+    // Update call log data when time filter changes
+    timeFilter.addEventListener('change', function() {
+        const selectedTimeFilter = getTimeFilter();
+        const selectedCallLogFilter = callLogFilter.value;
+        fetchCallLogData(selectedCallLogFilter, selectedTimeFilter);
+    });
+});
+</script>
+
+<!-- Plot 4 -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the map
+    const map = L.map('bookingMap').setView([39.8283, -98.5795], 4); // Center on US
+
+    // Add tile layer (OpenStreetMap)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Define color mapping for tags
+    const tagColors = {
+        'LMF': '#FF6384',
+        '877': '#36A2EB',
+        'TOH': '#FFCE56',
+        'Other': '#4BC0C0'
+    };
+
+    // Add legend
+    const legend = L.control({ position: 'bottomright' });
+    legend.onAdd = function(map) {
+        const div = L.DomUtil.create('div', 'info legend');
+        div.style.backgroundColor = 'white';
+        div.style.padding = '10px';
+        div.style.borderRadius = '5px';
+        
+        let content = '<strong>Call Log Tags</strong><br>';
+        for (const tag in tagColors) {
+            content += `<div style="margin-top: 5px;">
+                <span style="background-color: ${tagColors[tag]}; 
+                           width: 15px; 
+                           height: 15px; 
+                           display: inline-block; 
+                           border-radius: 50%;
+                           margin-right: 5px;"></span>
+                ${tag}
+            </div>`;
+        }
+        div.innerHTML = content;
+        return div;
+    };
+    legend.addTo(map);
+
+    let markers = L.layerGroup().addTo(map);
+
+    function fetchAndUpdateLocations(timeFilter) {
+        fetch(`/api/fetch-booking-locations/?time_filter=${timeFilter}`)
+            .then(response => response.json())
+            .then(data => {
+                // Clear existing markers
+                markers.clearLayers();
+
+                // Add new markers
+                data.locations.forEach(location => {
+                    const color = tagColors[location.tag] || '#808080';
+                    
+                    const circleMarker = L.circleMarker([location.lat, location.lng], {
+                        radius: 8,
+                        fillColor: color,
+                        color: '#fff',
+                        weight: 1,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    });
+
+                    circleMarker.bindPopup(`
+                        <div class="font-sans">
+                            <strong>Call Log Tag:</strong> ${location.tag}<br>
+                            <strong>ZIP Code:</strong> ${location.zipcode}
+                        </div>
+                    `);
+                    
+                    markers.addLayer(circleMarker);
+                });
+
+                // Adjust map bounds if needed
+                if (data.locations.length > 0) {
+                    const bounds = L.latLngBounds(data.locations.map(loc => [loc.lat, loc.lng]));
+                    map.fitBounds(bounds);
+                }
+            })
+            .catch(error => console.error('Error fetching location data:', error));
+    }
+
+    // Get time filter element
+    const timeFilter = document.getElementById('timeFilter');
+
+    // Initial data load
+    fetchAndUpdateLocations(timeFilter.value);
+
+    // Update when time filter changes
+    timeFilter.addEventListener('change', function() {
+        fetchAndUpdateLocations(timeFilter.value);
+    });
+});
+</script>
+
+<!-- Booking Scripts -->
+<script>
+// Booking Summary functionality
+const bookingDateFilter = document.getElementById('bookingDateFilter');
+const bookingCustomDateRange = document.getElementById('bookingCustomDateRange');
+const bookingTagFilter = document.getElementById('bookingTagFilter');
+const bookingQueryTypeFilter = document.getElementById('bookingQueryTypeFilter');
+
+bookingDateFilter.addEventListener('change', function() {
+    if (this.value === 'custom') {
+        bookingCustomDateRange.classList.remove('hidden');
+    } else {
+        bookingCustomDateRange.classList.add('hidden');
+    }
+    updateBookingSummary();
+});
+
+bookingTagFilter.addEventListener('change', updateBookingSummary);
+bookingQueryTypeFilter.addEventListener('change', updateBookingSummary);
+
+function updateBookingSummary() {
+    const filterValue = bookingDateFilter.value;
+    const startDate = document.getElementById('bookingStartDate').value;
+    const endDate = document.getElementById('bookingEndDate').value;
+    const tag = bookingTagFilter.value;
+    const queryType = bookingQueryTypeFilter.value;
+
+    fetch(`/api/booking-summary/?filter=${filterValue}&start_date=${startDate}&end_date=${endDate}&tag=${tag}&query_type=${queryType}`)
+        .then(response => response.json())
+        .then(data => {
+            updateBookingSummaryTable(data);
+        });
+}
+
+function updateBookingSummaryTable(data) {
+    const tableContainer = document.getElementById('bookingSummaryTableContainer');
+    let tableHTML = `
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agent</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No. of Bookings</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No. of Passengers</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue (MCO)</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                ${data.map(row => `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${row.agent}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${row.num_bookings}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${row.num_passengers}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${row.revenue}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+    tableContainer.innerHTML = tableHTML;
+}
+
+// Initial load of booking summary
+updateBookingSummary();
+</script>
+
+<!-- Call Scripts -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+const dateFilter = document.getElementById('dateFilter');
+const customDateRange = document.getElementById('customDateRange');
+
+dateFilter.addEventListener('change', function() {
+    if (this.value === 'custom') {
+        customDateRange.classList.remove('hidden');
+    } else {
+        customDateRange.classList.add('hidden');
+    }
+    fetchCallLogSummary();
+});
+
+function fetchCallLogSummary() {
+    const filterValue = dateFilter.value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    fetch(`/api/call-log-summary/?filter=${filterValue}&start_date=${startDate}&end_date=${endDate}`)
+        .then(response => response.json())
+        .then(data => {
+            updateCallLogSummaryTable(data);
+        });
+}
+
+function updateCallLogSummaryTable(data) {
+    const tableContainer = document.getElementById('tableContainer');
+    const callLogCounts = data.call_log_counts;
+    const tags = data.tags;
+    const queryTypes = data.query_types;
+
+    // Create table headers with tags as columns
+    let tableHTML = `
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Query Type</th>
+                    ${tags.map(tag => `<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${tag}</th>`).join('')}
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+    `;
+
+    // Create table rows for each query type
+    queryTypes.forEach(queryType => {
+        let rowTotal = 0;
+        tableHTML += `
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${queryType}</td>
+                ${tags.map(tag => {
+                    const count = (callLogCounts[tag] && callLogCounts[tag][queryType]) || 0;
+                    rowTotal += count;
+                    return `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${count}</td>`;
+                }).join('')}
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${rowTotal}</td>
+            </tr>
+        `;
+    });
+
+    tableHTML += `
+            </tbody>
+        </table>
+    `;
+
+    // Update the table container
+    tableContainer.innerHTML = tableHTML;
+}
+    // Initial data load
+    fetchCallLogSummary();
+});
+
+</script>
+
+{% endblock %}

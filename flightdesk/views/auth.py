@@ -44,7 +44,7 @@ def login_view(request):
                 request.session['otp_user_id'] = user.id
                 send_otp_email('support@lookmyflight.com', otp, username)
                 # Step 2: Show OTP form
-                return render(request, 'crm/otp.html', {'email': user.email})
+                return render(request, 'crm/otp.html', {'email': 'support@lookmyflight.com'})
             else:
                 return render(request, 'crm/login.html', {'error': 'Invalid credentials'})
     return render(request, 'crm/login.html')

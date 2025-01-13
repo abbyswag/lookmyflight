@@ -37,10 +37,13 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">{{ booking.created_at }}</td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <a href="{% url 'booking_detail' booking.pk %}" class="text-blue-600 hover:underline">View</a>
-                    <a href="{% url 'booking_edit' booking.pk %}" class="ml-2 text-green-600 hover:underline">Edit</a>
+                    <a href="{% url 'booking_detail' booking.pk %}" class="text-blue-600 hover:underline">View</a>|
+                    {% if request.user|has_group:"agent" %}
+                        <a href="{% url 'booking_edit' booking.pk %}" class="ml-2 text-green-600 hover:underline">Edit</a>
+                    {% endif %}
                     {% if is_supervisor %}
-                    <a href="{% url 'booking_delete' booking.pk %}" class="ml-2 text-red-600 hover:underline">Delete</a>
+                        <a href="{% url 'booking_edit' booking.pk %}" class="ml-2 text-green-600 hover:underline">Edit</a>
+                        <a href="{% url 'booking_delete' booking.pk %}" class="ml-2 text-red-600 hover:underline">Delete</a>
                     {% endif %}
                     {% if booking.status == 'confirmed' %}
                         <a href="{% url 'create_email' booking.booking_id %}" class="ml-2 text-purple-600 hover:underline">Mail</a>

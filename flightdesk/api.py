@@ -287,7 +287,7 @@ def call_log_bar_chart_api(request):
 @require_GET
 @login_required
 def booking_summary_api(request):
-    filter_type = request.GET.get('filter', 'today')
+    filter_type = request.GET.get('filter', 'lastWeek')
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
     tag = request.GET.get('tag')
@@ -344,8 +344,6 @@ from django.utils.timezone import now
 @login_required
 def booking_daily_chart_api(request):
     filter_type = request.GET.get('filter', 'today')
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
 
     today = now().date()
     if filter_type == 'today':

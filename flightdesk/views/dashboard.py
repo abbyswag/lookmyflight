@@ -2,6 +2,7 @@ import openpyxl
 from django.http import HttpResponse
 from django.utils import timezone
 from datetime import timedelta
+import requests
 from flightdesk.views import *
 
 
@@ -143,17 +144,10 @@ def dashboard(request):
         return redirect('agent_dashboard')
 
     is_supervisor = user.groups.filter(name='supervisor').exists()
-
-    tags = Campaign.objects.all()
-    query_types = Query.objects.all()
-
     context = {
         'is_supervisor': is_supervisor,
-        'tags': tags,
-        'query_types': query_types,
     }
-
-    return render(request, 'crm/dashboard.html', context)
+    return render(request, 'dashboard/admin_dashboard.html', context)
 
 
 from django.shortcuts import render
@@ -241,3 +235,236 @@ def agent_dashboard(request):
     }
 
     return render(request, 'dashboard/agent_dashboard.html', context)
+
+
+from django.http import JsonResponse
+from django.db.models import Sum, Value
+from django.utils import timezone
+from datetime import timedelta
+from django.db.models.functions import TruncDate
+
+# Helper function to get date range based on the time filter
+def get_date_range(time_filter):
+    today = timezone.now().date()
+    
+    if time_filter == 'thisMonth':
+        start_date = today.replace(day=1)
+        end_date = today
+    elif time_filter == 'thisWeek':
+        start_date = today - timedelta(days=today.weekday())
+        end_date = today
+    elif time_filter == 'lastMonth':
+        start_date = today.replace(day=1) - timedelta(days=1)
+        start_date = start_date.replace(day=1)
+        end_date = start_date.replace(day=28)  # last day of last month
+    elif time_filter == 'thisQuarter':
+        quarter = (today.month - 1) // 3 + 1
+        start_date = today.replace(month=(quarter - 1) * 3 + 1, day=1)
+        end_date = today
+    else:
+        start_date = today
+        end_date = today
+    
+    return start_date, end_date
+
+# View to fetch MCO data by filter and time range
+def fetch_mco_data(request):
+    filter_type = request.GET.get('filter', 'call_log_tag')
+    time_filter = request.GET.get('time_filter', 'thisMonth')
+
+    start_date, end_date = get_date_range(time_filter)
+    
+    bookings = Booking.objects.filter(created_at__range=[start_date, end_date])
+
+    if filter_type == 'status':
+        data = bookings.values('status').annotate(total_mco=Sum('mco')).order_by('status')
+        labels = [item['status'] for item in data]
+        mco_values = [item['total_mco'] for item in data]
+    
+    elif filter_type == 'agents':
+        data = bookings.values('added_by__username').annotate(total_mco=Sum('mco')).order_by('added_by__username')
+        labels = [item['added_by__username'] for item in data]
+        mco_values = [item['total_mco'] for item in data]
+    
+    elif filter_type == 'call_log_tag':
+        data = bookings.filter(call_log__isnull=False).values('call_log__tag__code').annotate(total_mco=Sum('mco')).order_by('call_log__tag__code')
+        labels = [item['call_log__tag__code'] for item in data]
+        mco_values = [item['total_mco'] for item in data]
+    
+    elif filter_type == 'category':
+        # Define the categories we want to track
+        categories = ['flight', 'hotel', 'vehicle']
+        
+        # Create a Case/When expression to categorize bookings
+        from django.db.models import Case, When, CharField
+        
+        data = bookings.annotate(
+            category=Case(
+                *[When(subcategory__icontains=cat, then=Value(cat.capitalize())) for cat in categories],
+                default=Value('Other'),
+                output_field=CharField(),
+            )
+        ).values('category').annotate(
+            total_mco=Sum('mco')
+        ).exclude(category='Other').order_by('category')
+        
+        labels = [item['category'] for item in data]
+        mco_values = [item['total_mco'] for item in data]
+    
+    else:
+        return JsonResponse({'error': 'Invalid filter type'}, status=400)
+
+    return JsonResponse({
+        'labels': labels,
+        'mco_values': mco_values,
+    })
+
+
+def fetch_bookings_and_passengers(request):
+    time_filter = request.GET.get('time_filter', 'thisMonth')
+    tag_filter = request.GET.get('tag', '')
+
+    start_date, end_date = get_date_range(time_filter)
+    
+    # Start with base booking query
+    bookings = Booking.objects.filter(created_at__range=[start_date, end_date])
+
+    # Apply tag filter if provided
+    if tag_filter:
+        bookings = bookings.filter(call_log__tag__code=tag_filter)
+
+    # Aggregate data by date
+    daily_data = (bookings
+        .annotate(date=TruncDate('created_at'))
+        .values('date')
+        .annotate(
+            booking_count=Count('id', distinct=True),
+            passenger_count=Count('passenger', distinct=True)
+        )
+        .order_by('date'))
+
+    # Prepare data for the chart
+    dates = []
+    booking_counts = []
+    passenger_counts = []
+
+    # Fill in any missing dates with zero counts
+    current_date = start_date
+    data_dict = {item['date']: item for item in daily_data}
+    
+    while current_date <= end_date:
+        dates.append(current_date.strftime('%Y-%m-%d'))
+        if current_date in data_dict:
+            booking_counts.append(data_dict[current_date]['booking_count'])
+            passenger_counts.append(data_dict[current_date]['passenger_count'])
+        else:
+            booking_counts.append(0)
+            passenger_counts.append(0)
+        current_date += timedelta(days=1)
+
+    return JsonResponse({
+        'dates': dates,
+        'booking_counts': booking_counts,
+        'passenger_counts': passenger_counts
+    })
+
+
+def fetch_call_log_data(request):
+    filter_type = request.GET.get('filter', 'tag')
+    time_filter = request.GET.get('time_filter', 'thisMonth')
+
+    start_date, end_date = get_date_range(time_filter)
+    
+    call_logs = CallLog.objects.filter(call_date__range=[start_date, end_date])
+
+    if filter_type == 'tag':
+        data = (call_logs.filter(tag__isnull=False)
+                .values('tag__code')
+                .annotate(count=Count('id'))
+                .order_by('tag__code'))
+        labels = [item['tag__code'] for item in data]
+        values = [item['count'] for item in data]
+    
+    elif filter_type == 'query':
+        data = (call_logs.filter(query_type__isnull=False)
+                .values('query_type__code') 
+                .annotate(count=Count('id'))
+                .order_by('query_type__code'))
+        labels = [item['query_type__code'] for item in data]
+        values = [item['count'] for item in data]
+    
+    elif filter_type == 'agent':
+        data = (call_logs.filter(added_by__isnull=False)
+                .values('added_by__username')
+                .annotate(count=Count('id'))
+                .order_by('added_by__username'))
+        labels = [item['added_by__username'] for item in data]
+        values = [item['count'] for item in data]
+    
+    else:
+        return JsonResponse({'error': 'Invalid filter type'}, status=400)
+
+    return JsonResponse({
+        'labels': labels,
+        'values': values,
+    })
+
+
+def geocode_zip(zip_code):
+    """Geocode a zip code using Google Maps API"""
+    try:
+        url = f"https://maps.googleapis.com/maps/api/geocode/json?address={zip_code}&key={settings.GOOGLE_MAPS_API_KEY}"
+        response = requests.get(url)
+        data = response.json()
+        
+        if data['status'] == 'OK':
+            location = data['results'][0]['geometry']['location']
+            return location['lat'], location['lng']
+        return None, None
+    except Exception as e:
+        print(f"Geocoding error for {zip_code}: {str(e)}")
+        return None, None
+
+def fetch_booking_locations(request):
+    time_filter = request.GET.get('time_filter', 'thisMonth')
+    start_date, end_date = get_date_range(time_filter)
+    
+    # Get bookings within date range with related billing info and call log
+    bookings = (Booking.objects
+                .filter(created_at__range=[start_date, end_date])
+                .select_related('billinginformation', 'call_log__tag'))
+
+    location_data = []
+    # Cache for zip codes to avoid repeated API calls within the same request
+    zip_cache = {}
+    
+    for booking in bookings:
+        try:
+            if not booking.billinginformation or not booking.billinginformation.zipcode:
+                continue
+                
+            zip_code = booking.billinginformation.zipcode
+            
+            # Check cache first
+            if zip_code in zip_cache:
+                lat, lng = zip_cache[zip_code]
+            else:
+                # Geocode and cache the result
+                lat, lng = geocode_zip(zip_code)
+                zip_cache[zip_code] = (lat, lng)
+            
+            if lat and lng:
+                location_data.append({
+                    'lat': lat,
+                    'lng': lng,
+                    'tag': booking.call_log.tag.code if booking.call_log and booking.call_log.tag else 'Other',
+                    'zipcode': zip_code
+                })
+                
+        except Exception as e:
+            print(f"Error processing booking {booking.id}: {str(e)}")
+            continue
+
+    return JsonResponse({
+        'locations': location_data
+    })

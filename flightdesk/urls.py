@@ -18,14 +18,15 @@ urlpatterns = [
     # Dashboard Routes
     path('dashboard/', dashboard.dashboard, name='dashboard'),
     path('dashboard/agent/', dashboard.agent_dashboard, name='agent_dashboard'),
+
     path('api/call-log-summary/', api.call_log_summary_api, name='call_log_summary_api'),
-    path('api/call-log-bar-chart/', api.call_log_bar_chart_api, name='call_log_bar_chart_api'),
     path('api/booking-summary/', api.booking_summary_api, name='booking_summary_api'),
-    path('api/booking-daily-chart/', api.booking_daily_chart_api, name='booking_daily_chart'),
-    path('api/customer-heatmap/', api.customer_heatmap_api, name='customer_heatmap_api'),
     path('api/call-log/download/', dashboard.download_call_log_excel, name='download_call_log_excel'),
     path('api/bookings/download/', dashboard.download_bookings_excel, name='download_bookings_excel'),
-
+    path('api/fetch-mco-data/', dashboard.fetch_mco_data, name='mco_bar_chart'),
+    path('api/fetch-bookings-and-passengers/', dashboard.fetch_bookings_and_passengers, name='bookings_line_chart'),
+    path('api/fetch-call-log-data/', dashboard.fetch_call_log_data, name='fetch-call-log-distribution'),
+    path('api/fetch-booking-locations/', dashboard.fetch_booking_locations, name='fetch-booking-locations'),
 
     # Staff Routes
     path('staff/create/', routes.staff_create, name='staff_create'),

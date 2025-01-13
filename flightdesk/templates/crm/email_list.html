@@ -31,11 +31,15 @@
                     </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <a href="{% url 'email_edit' email.id %}" class="text-blue-600 hover:underline">Edit</a>
                     <a href="{% url 'email_view' email.id %}" class="text-green-600 hover:underline ml-2">View</a>
-                    <a href="{% url 'email_send' email.id %}" class="text-purple-600 hover:underline ml-2">Send</a>
-                    {% if user.is_supervisor %}
-                    <a href="{% url 'email_delete' email.id %}" class="text-red-600 hover:underline ml-2">Delete</a>
+                    {% if request.user|has_group:"agent" %}
+                        <a href="{% url 'email_edit' email.id %}" class="text-blue-600 hover:underline">Edit</a>
+                        <a href="{% url 'email_send' email.id %}" class="text-purple-600 hover:underline ml-2">Send</a>
+                    {% endif %}
+                    {% if request.user|has_group:"supervisor" %}
+                        <a href="{% url 'email_edit' email.id %}" class="text-blue-600 hover:underline">Edit</a>
+                        <a href="{% url 'email_send' email.id %}" class="text-purple-600 hover:underline ml-2">Send</a>
+                        <a href="{% url 'email_delete' email.id %}" class="text-red-600 hover:underline ml-2">Delete</a>
                     {% endif %}
                 </td>
             </tr>
