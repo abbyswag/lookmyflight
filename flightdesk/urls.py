@@ -1,7 +1,7 @@
 from django.urls import path
 from . import routes
 from . import api
-from flightdesk.views import basic, dashboard, revision, chat, auth, settings, bookings
+from flightdesk.views import basic, dashboard, revision, chat, auth, settings, bookings, price_check
 from django.shortcuts import redirect
 
 def redirect_to_login(request):
@@ -105,4 +105,6 @@ urlpatterns = [
     path('revision-categories/<int:pk>/', basic.revision_category_detail, name='revision_category_detail'),
     path('revision-categories/<int:pk>/update/', basic.revision_category_update, name='revision_category_update'),
     path('revision-categories/<int:pk>/delete/', basic.revision_category_delete, name='revision_category_delete'),
+
+    path('price-check/', price_check.price_check, name='price_check'),
 ]

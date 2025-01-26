@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container mx-auto p-8">
+    <h1 class="text-4xl text-center mb-8">Flight Price Check</h1>
+    
+    <form id="flightSearchForm" class="space-y-4">
+        <div class="flex space-x-4">
+            <input type="text" id="origin" name="originLocationCode" placeholder="Origin (IATA)" class="w-full p-3 rounded bg-gray-900 border border-gray-700" required>
+            <input type="text" id="destination" name="destinationLocationCode" placeholder="Destination (IATA)" class="w-full p-3 rounded bg-gray-900 border border-gray-700" required>
+        </div>
+        <div class="flex space-x-4">
+            <input type="date" id="departureDate" name="departureDate" class="w-full p-3 rounded bg-gray-900 border border-gray-700" required>
+            <input type="date" id="returnDate" name="returnDate" class="w-full p-3 rounded bg-gray-900 border border-gray-700">
+        </div>
+        <div class="flex space-x-4">
+            <input type="number" id="adults" name="adults" min="1" placeholder="Number of Adults" class="w-full p-3 rounded bg-gray-900 border border-gray-700" required>
+        </div>
+        <button type="submit" class="w-full p-3 bg-blue-500 rounded text-white hover:bg-blue-700">Search Flights</button>
+    </form>
+
+    <div id="results" class="mt-8"></div>
+</div>
+
+<script>
+    const token = "{{ access_token }}"; // Retrieve token from context
+
+    // Handle form submission
+    document.getElementById('flightSearchForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        // Collect form data
+        const formData = new FormData(event.target);
+        const origin = formData.get('originLocationCode');
+        const destination = formData.get('destinationLocationCode');
+        const departureDate = formData.get('departureDate');
+        const returnDate = formData.get('returnDate');
+        const adults = formData.get('adults');
+
+        // Send flight search request
+        fetch(`https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=${origin}&destinationLocationCode=${destination}&departureDate=${departureDate}&adults=${adults}&returnDate=${returnDate}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Display results
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = ''; // Clear previous results
+
+            if (data.data && data.data.length > 0) {
+                data.data.forEach(flight => {
+                    const flightElement = document.createElement('div');
+                    flightElement.classList.add('bg-gray-700', 'p-4', 'rounded', 'mb-4');
+                    flightElement.innerHTML = `
+                        <h3 class="text-xl font-bold">${flight.itineraries[0].segments[0].carrierCode} ${flight.itineraries[0].segments[0].number}</h3>
+                        <p>${flight.price.currency} ${flight.price.total}</p>
+                        <p>${flight.itineraries[0].segments[0].departure.iataCode} to ${flight.itineraries[0].segments[1].arrival.iataCode}</p>
+                    `;
+                    resultsDiv.appendChild(flightElement);
+                });
+            } else {
+                resultsDiv.innerHTML = '<p>No flights found.</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    });
+</script>
+
+{% endblock %}

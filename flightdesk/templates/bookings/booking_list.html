@@ -42,7 +42,9 @@
             <tr>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking ID</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tag</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
@@ -52,6 +54,7 @@
             <tr>
                 <td class="px-6 py-4 whitespace-nowrap">{{ booking.booking_id }}</td>
                 <td class="px-6 py-4 whitespace-nowrap">{{ booking.call_log.name }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ booking.call_log.email }}</td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                     {% if booking.status == 'initiated' %}
@@ -68,6 +71,7 @@
                         {{ booking.status }}
                     </span>
                 </td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ booking.call_log.tag }}</td>
                 <td class="px-6 py-4 whitespace-nowrap">{{ booking.created_at }}</td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <a href="{% url 'booking_detail' booking.pk %}" class="text-blue-600 hover:underline">View</a>

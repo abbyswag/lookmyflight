@@ -4,16 +4,33 @@ from django.core.mail import send_mail
 from django.http import JsonResponse
 from django.conf import settings
 import random
+from django.core.mail import EmailMessage
+from django.core.mail.backends.smtp import EmailBackend
+
 from django.contrib.auth.models import User
 
 # Store OTP in session
 def generate_otp():
     return random.randint(1000, 9999)
 
+
+
 def send_otp_email(email, otp, username):
     subject = f"OTP for {username}"
     message = f"OTP for {username} is: {otp}. Please enter this to complete your login."
-    send_mail(subject, message, settings.EMAIL_HOST_USER, [email])
+    from_email = "dualnature67@gmail.com"
+
+    email_backend = EmailBackend(
+        host=settings.EMAIL_HOST,
+        port=settings.EMAIL_PORT,
+        username=settings.SECONDARY_EMAIL_CONFIG['EMAIL_HOST_USER'],
+        password=settings.SECONDARY_EMAIL_CONFIG['EMAIL_HOST_PASSWORD'],
+        use_tls=settings.EMAIL_USE_TLS,
+    )
+
+    email_message = EmailMessage(subject, message, from_email, [email], connection=email_backend)
+    email_message.send()
+    
 
 def login_view(request):
     if request.method == 'POST':
