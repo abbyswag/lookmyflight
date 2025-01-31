@@ -27,10 +27,10 @@ def send_otp_email(email, otp, username):
         password=settings.SECONDARY_EMAIL_CONFIG['EMAIL_HOST_PASSWORD'],
         use_tls=settings.EMAIL_USE_TLS,
     )
-
+    print(email_backend)
     email_message = EmailMessage(subject, message, from_email, [email], connection=email_backend)
     email_message.send()
-    
+
 
 def login_view(request):
     if request.method == 'POST':

@@ -542,8 +542,13 @@ def get_clened_email(booking):
 from datetime import datetime
 
 # @login_required
-@user_passes_test(is_supervisor)
 def approve_booking(request, booking_id):
+
+    if request.user:
+        if is_supervisor(request.user):
+            pass
+        else: return {'You are not authorised'}
+
     booking = get_object_or_404(Booking, booking_id=booking_id)
 
     if request.method == 'POST':
