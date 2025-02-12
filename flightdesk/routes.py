@@ -541,13 +541,8 @@ def get_clened_email(booking):
 
 from datetime import datetime
 
-# @login_required
-def approve_booking(request, booking_id):
 
-    if request.user:
-        if is_supervisor(request.user):
-            pass
-        else: return {'You are not authorised'}
+def approve_booking(request, booking_id):
 
     booking = get_object_or_404(Booking, booking_id=booking_id)
 
