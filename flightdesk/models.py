@@ -89,6 +89,7 @@ class BillingInformation(models.Model):
     card_holder_name = models.CharField(max_length=255, default= None)
     card_holder_number = models.CharField(max_length=20, default= None)
     email = models.EmailField(max_length=254, validators=[EmailValidator()], default= None)
+
     
     card_number = models.CharField(
         max_length=16,
@@ -145,6 +146,9 @@ class Booking(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     remark = models.TextField(blank=True)
     added_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    staff_fill_billing = models.BooleanField(default=True)  # True = staff will fill now, False = user will fill later
+
 
     regarding_flight = models.BooleanField(default=False)
     regarding_hotel = models.BooleanField(default=False)
@@ -255,3 +259,25 @@ class RevisionCategorySetting(models.Model):
 
     def __str__(self):
         return self.category_name
+    
+
+class CampaignModel(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    budget = models.DecimalField(max_digits=10, decimal_places=2, help_text="Total budget allocated")
+    spent = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Amount spent so far")
+    traffic = models.IntegerField(default=0, help_text="Total traffic generated")
+    conversions = models.IntegerField(default=0, help_text="Successful conversions from the campaign")
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="campaigns_created")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def remaining_budget(self):
+        return self.budget - self.spent
+
+    def conversion_rate(self):
+        if self.traffic > 0:
+            return round((self.conversions / self.traffic) * 100, 2)
+        return 0.00
+
+    def __str__(self):
+        return f"{self.name} - Budget: {self.budget}, Spent: {self.spent}, Traffic: {self.traffic}"

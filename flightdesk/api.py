@@ -54,6 +54,24 @@ def create_booking(request):
 
 @login_required
 @require_http_methods(["POST"])
+def update_booking_billing_choice(request):
+    data = json.loads(request.body)
+    booking_id = data.get('booking_id')
+    staff_fill_billing = data.get('staff_fill_billing', True)
+
+    try:
+        booking = Booking.objects.get(booking_id=booking_id)
+        booking.staff_fill_billing = staff_fill_billing
+        booking.save()
+        return JsonResponse({'success': True})
+    except Booking.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Booking not found.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+@require_http_methods(["POST"])
 def add_billing_info(request):
     if request.method == 'POST':
         data = json.loads(request.body)

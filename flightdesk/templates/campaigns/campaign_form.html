@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}Campaign Management{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6">
+    <h2 class="text-3xl font-bold mb-6">Campaign Management</h2>
+
+    <!-- Campaign Create & Update Form -->
+{% if form %}
+<div class="container mx-auto p-6 bg-white shadow-md rounded-lg mt-6">
+    <h2 class="text-2xl font-bold mb-4">{{ action }} Campaign</h2>
+    <form method="POST">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for field in form %}
+            <div>
+                <label class="block text-gray-700 font-bold mb-1">{{ field.label }}</label>
+                {{ field }}
+            </div>
+            {% endfor %}
+        </div>
+        <div class="mt-4 flex justify-end">
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700">Save</button>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+</div>
+{% endblock %}

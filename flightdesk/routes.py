@@ -76,87 +76,6 @@ def staff_list(request):
     return render(request, 'crm/staff_list.html', {'staff': staff})
 
 
-# CallLog Views
-@login_required
-def call_log_list(request):
-    user = request.user
-    is_supervisor = user.groups.filter(name='supervisor').exists()
-    
-    # Initialize filter parameters
-    date = request.GET.get('date', None)
-    tag = request.GET.get('tag', None)
-    conversion = request.GET.get('conversion', None)
-    added_by = request.GET.get('added_by', None)
-    
-    filters = Q()
-    
-    if date:
-        filters &= Q(call_date__date=date)
-    if tag:
-        filters &= Q(tag__code=tag)
-    if conversion:
-        filters &= Q(converted=conversion)
-    if added_by and is_supervisor:
-        filters &= Q(added_by__username=added_by)
-
-    call_logs = CallLog.objects.filter(filters).select_related('tag', 'added_by').order_by('-call_date')
-    
-    # Prepare for the dropdown filters
-    tags = Campaign.objects.all()
-    users = User.objects.all()
-    
-    context = {
-        'call_logs': call_logs,
-        'tags': tags,
-        'users': users,
-        'selected_date': date,
-        'selected_tag': tag,
-        'selected_conversion': conversion,
-        'selected_added_by': added_by,
-        'is_supervisor': is_supervisor,
-    }
-    
-    return render(request, 'crm/call_log_list.html', context)
-
-@login_required
-def call_log_create(request):
-    if request.method == 'POST':
-        form = CallLogForm(request.POST)
-        if form.is_valid():
-            call_log = form.save(commit=False)
-            call_log.added_by = request.user
-            call_log.save()
-            return redirect('call_log_list')
-    else:
-        form = CallLogForm()
-    return render(request, 'crm/call_log_form.html', {'form': form})
-
-@login_required
-def call_log_detail(request, pk):
-    call_log = get_object_or_404(CallLog, pk=pk)
-    return render(request, 'crm/call_log_detail.html', {'call_log': call_log})
-
-@login_required
-def call_log_update(request, pk):
-    call_log = get_object_or_404(CallLog, pk=pk)
-    if request.method == 'POST':
-        form = CallLogForm(request.POST, instance=call_log)
-        if form.is_valid():
-            form.save()
-            return redirect('call_log_detail', pk=pk)
-    else:
-        form = CallLogForm(instance=call_log)
-    return render(request, 'crm/call_log_form.html', {'form': form})
-
-@login_required
-def call_log_delete(request, pk):
-    call_log = get_object_or_404(CallLog, pk=pk)
-    if request.method == 'POST':
-        call_log.delete()
-        return redirect('call_log_list')
-    return render(request, 'crm/call_log_confirm_delete.html', {'call_log': call_log})
-
-
 # Campaign Routes
 @login_required
 @user_passes_test(is_supervisor)
@@ -402,12 +321,33 @@ def booking_delete(request, pk):
     return render(request, 'crm/booking_confirm_delete.html', {'booking': booking})
     
 # Email Model Routes
+from django.core.paginator import Paginator
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from .models import Email
+
 @login_required
 def email_list(request):
+    search_query = request.GET.get('search', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+
+    # Fetch all emails
     emails = Email.objects.all().order_by('-id')
-    # if request.user.groups.filter(name='agent').exists():
-        # emails = Email.objects.filter(booking__added_by=request.user).order_by('-id')
-    return render(request, 'crm/email_list.html', {'emails': emails})
+
+    # Apply search filter (by customer name)
+    if search_query:
+        emails = emails.filter(booking__call_log__name__icontains=search_query)
+
+    # Apply status filter
+    if status_filter in ['draft', 'sent']:
+        emails = emails.filter(status=status_filter)
+
+    # Pagination (100 emails per page)
+    paginator = Paginator(emails, 100)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'crm/email_list.html', {'emails': page_obj})
 
 @login_required
 def create_email(request, booking_id):
@@ -436,7 +376,7 @@ def email_create(request, booking_id):
             email.save()
             return redirect('email_list')
     else:
-        prefix = 'https://lmfcrm.site'
+        prefix = 'http://127.0.0.1:8000/'
         approval_url = prefix + f'/approve/{booking.booking_id}'
         total_amount = str(booking.mco + booking.flight_cost + booking.hotel_cost + booking.vehicle_cost)
         
@@ -540,21 +480,56 @@ def get_clened_email(booking):
     return cleaned_email_body, email.recipient
 
 from datetime import datetime
+from django.http import JsonResponse
 
 
 def approve_booking(request, booking_id):
-
     booking = get_object_or_404(Booking, booking_id=booking_id)
 
     if request.method == 'POST':
+        # 1. If staff is NOT filling billing (=> user must fill):
+        if not booking.staff_fill_billing:
+            # Check if we already have a BillingInformation record
+            billing_exists = BillingInformation.objects.filter(booking=booking).exists()
+            if not billing_exists:
+                data = request.POST
+                # Example basic validations (you can expand as needed or reuse your `add_billing_info` logic):
+                required_fields = [
+                    'card_type', 'card_holder_name', 'card_holder_number', 'email',
+                    'card_number', 'expiry_date', 'card_cvv', 'primary_address',
+                    'country', 'zipcode'
+                ]
+                for field in required_fields:
+                    if field not in data or not data[field].strip():
+                        return JsonResponse({'success': False, 'error': f"{field} is required and cannot be blank."})
+
+                # Create the billing record
+                BillingInformation.objects.create(
+                    booking=booking,
+                    card_type=data['card_type'],
+                    card_holder_name=data['card_holder_name'],
+                    card_holder_number=data['card_holder_number'],
+                    email=data['email'],
+                    card_number=data['card_number'],
+                    expiry_date=data['expiry_date'],
+                    card_cvv=data['card_cvv'],
+                    primary_address=data['primary_address'],
+                    country=data['country'],
+                    zipcode=data['zipcode'],
+                )
+
+        # 2. In both cases (staff_fill_billing = True or False), handle final signature logic:
         booking.status = 'allocating'
         booking.save()
-        # Retrieve form data
+
+        # Retrieve the email body and recipient
         email_body, rec = get_clened_email(booking)
+
+        # Extract form fields for signature
         full_name = request.POST.get('fullName')
         signature_style = request.POST.get('signatureStyle')
 
-        # User declaration with tick and signature
+        # Build user declaration with date/time
         now = datetime.now()
         date_time_string = now.strftime('%B %d, %Y at %I:%M %p')
         user_declaration = f"""
@@ -563,8 +538,10 @@ def approve_booking(request, booking_id):
             <p style="text-align: left; color: gray">Dated: {date_time_string} UTC </p>
             <p style="text-align: right; font-family: {signature_style}, cursive; font-size: 24px;">{full_name}</p>
         """
+
         final_email_body = f"{email_body}{user_declaration}"
-        # Create and save the email
+
+        # Create and save the email record
         new_email = Email(
             subject=f"Signed Document for Booking ID {booking.booking_id}",
             recipient=rec,
@@ -573,22 +550,32 @@ def approve_booking(request, booking_id):
             booking=booking
         )
         new_email.save()
+
         return render(request, 'approved.html', {'booking_id': booking.booking_id})
-    
-    else:    
+
+    else:
+        # GET or other HTTP methods
         if booking.status == 'authorizing':
+            # For the GET, show the 'authorizing' page
             email_body, _ = get_clened_email(booking)
+            
+            # If staff_fill_billing=False, user must see billing form
+            # If staff_fill_billing=True, skip billing form
+            show_billing = not booking.staff_fill_billing
+
             return render(request, 'authorizing_booking.html', {
                 'booking_id': booking.booking_id,
                 'email_body': email_body,
+                'show_billing_form': show_billing,
             })
         
+        # If not in authorizing status, user might have already signed or can't sign
         email_body, _ = get_clened_email(booking)
         return render(request, 'already_signed.html', {
             'email_body': email_body,
             'booking_id': booking.booking_id,
         })
-    
+
 
 from .models import Query
 from .forms import QueryForm

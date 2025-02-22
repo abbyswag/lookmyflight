@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Campaign Management{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6">
+    <h2 class="text-3xl font-bold mb-6">Campaign Management</h2>
+
+    <!-- Create Campaign Button -->
+    <div class="flex justify-between items-center mb-4">
+        <p class="text-gray-600">Track and manage your marketing campaigns effectively.</p>
+        <a href="{% url 'camp_model_create' %}" class="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700">Create New Campaign</a>
+    </div>
+
+    <!-- Campaigns Table -->
+    <div class="overflow-x-auto bg-white shadow-md rounded-lg">
+        <table class="min-w-full bg-white border border-gray-200">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="p-4 border-b text-left">Name</th>
+                    <th class="p-4 border-b text-left">Budget</th>
+                    <th class="p-4 border-b text-left">Spent</th>
+                    <th class="p-4 border-b text-left">Traffic</th>
+                    <th class="p-4 border-b text-left">Conversions</th>
+                    <th class="p-4 border-b text-left">Conversion Rate</th>
+                    <th class="p-4 border-b text-left">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for campaign in campaigns %}
+                <tr class="hover:bg-gray-50">
+                    <td class="p-4 border-b">{{ campaign.name }}</td>
+                    <td class="p-4 border-b">${{ campaign.budget }}</td>
+                    <td class="p-4 border-b text-red-500">${{ campaign.spent }}</td>
+                    <td class="p-4 border-b">{{ campaign.traffic }}</td>
+                    <td class="p-4 border-b">{{ campaign.conversions }}</td>
+                    <td class="p-4 border-b text-green-600">{{ campaign.conversion_rate }}%</td>
+                    <td class="p-4 border-b flex space-x-4">
+                        <a href="{% url 'camp_model_update' campaign.id %}" class="text-blue-600 hover:underline">Edit</a>
+                        <form method="POST" action="{% url 'camp_model_delete' campaign.id %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="text-red-600 hover:underline" onclick="return confirm('Are you sure you want to delete this campaign?');">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="p-4 text-center text-gray-500">No campaigns found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

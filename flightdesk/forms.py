@@ -1,5 +1,5 @@
 from django import forms
-from .models import CallLog, Campaign, BillingInformation, Booking, Email, Query, Airline, Revision, RevisionCategorySetting
+from .models import *
 from django.contrib.auth.models import User, Group
 from django.core.exceptions import ValidationError
 from django_summernote.widgets import SummernoteWidget
@@ -15,11 +15,6 @@ class CallLogForm(forms.ModelForm):
     class Meta:
         model = CallLog
         fields = ['converted', 'name', 'phone', 'email', 'tag', 'query_type','concern', 'airline']
-
-class CampaignForm(forms.ModelForm):
-    class Meta:
-        model = Campaign
-        fields = ['code']
 
 class CampaignForm(forms.ModelForm):
     class Meta:
@@ -135,4 +130,17 @@ class RevisionForm(forms.ModelForm):
         fields = ['note']
         widgets = {
             'note': SummernoteWidget(),
+        }
+
+
+class CampaignModelForm(forms.ModelForm):
+    class Meta:
+        model = CampaignModel
+        fields = ['name', 'budget', 'spent', 'traffic', 'conversions']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'budget': forms.NumberInput(attrs={'class': 'form-control'}),
+            'spent': forms.NumberInput(attrs={'class': 'form-control'}),
+            'traffic': forms.NumberInput(attrs={'class': 'form-control'}),
+            'conversions': forms.NumberInput(attrs={'class': 'form-control'}),
         }

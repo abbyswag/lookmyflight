@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}Call Log{% endblock %}
+
+{% block content %}
+<h2 class="text-2xl font-bold mb-4">Call Logs</h2>
+
+<!-- Search and Filter Options -->
+<form method="GET" class="mb-4 flex space-x-4">
+    <input type="text" name="search" placeholder="Search by Customer Name" value="{{ request.GET.search }}"
+        class="px-4 py-2 border rounded w-1/3">
+    
+    <select name="tag" class="px-4 py-2 border rounded">
+        <option value="">All Tags</option>
+        {% for tag in tags %}
+        <option value="{{ tag.code }}" {% if request.GET.tag == tag.code %}selected{% endif %}>{{ tag.code }}</option>
+        {% endfor %}
+    </select>
+    
+    <select name="date_filter" class="px-4 py-2 border rounded">
+        <option value="">All Days</option>
+        <option value="today" {% if request.GET.date_filter == 'today' %}selected{% endif %}>Today</option>
+        <option value="yesterday" {% if request.GET.date_filter == 'yesterday' %}selected{% endif %}>Last Day</option>
+        <option value="this_week" {% if request.GET.date_filter == 'this_week' %}selected{% endif %}>This Week</option>
+    </select>
+    
+    {% if is_supervisor %}
+    <select name="added_by" class="px-4 py-2 border rounded">
+        <option value="">All Users</option>
+        {% for user in users %}
+        <option value="{{ user.username }}" {% if request.GET.added_by == user.username %}selected{% endif %}>{{ user.username }}</option>
+        {% endfor %}
+    </select>
+    {% endif %}
+    
+    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Apply</button>
+    <a href="{% url 'call_log_add' %}" class="px-4 py-2 bg-green-600 text-white rounded">Add New</a>
+</form>
+
+<div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agent</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Call Date</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tag</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Query</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            {% for call_log in page_obj %}
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap">{{ call_log.added_by }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ call_log.name }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ call_log.phone }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ call_log.call_date }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ call_log.tag.code }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ call_log.query_type }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right">
+                    <a href="{% url 'call_log_detail' call_log.id %}" class="text-blue-600 hover:underline">View</a>
+                    {% if request.user|has_group:"agent" %}
+                        <a href="{% url 'call_log_edit' call_log.id %}" class="text-yellow-600 hover:underline">Edit</a>
+                    {% endif %}
+                    {% if request.user|has_group:"supervisor" %}
+                        <a href="{% url 'call_log_edit' call_log.id %}" class="text-yellow-600 hover:underline">Edit</a>
+                        <a href="{% url 'call_log_delete' call_log.id %}" class="text-red-600 hover:underline">Delete</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+<div class="mt-4 flex justify-between items-center">
+    <div>
+        <p class="text-sm text-gray-600">
+            Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} call logs
+        </p>
+    </div>
+    <div>
+        <nav class="inline-flex space-x-2">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 bg-gray-200 text-gray-800 rounded">Previous</a>
+            {% endif %}
+            {% for page in page_obj.paginator.page_range %}
+                {% if page == page_obj.number %}
+                <span class="px-3 py-1 bg-blue-600 text-white rounded">{{ page }}</span>
+                {% else %}
+                <a href="?page={{ page }}" class="px-3 py-1 bg-gray-200 text-gray-800 rounded">{{ page }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 bg-gray-200 text-gray-800 rounded">Next</a>
+            {% endif %}
+        </nav>
+    </div>
+</div>
+{% endblock %}

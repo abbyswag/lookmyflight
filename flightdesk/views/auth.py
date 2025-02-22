@@ -14,7 +14,6 @@ def generate_otp():
     return random.randint(1000, 9999)
 
 
-
 def send_otp_email(email, otp, username):
     subject = f"OTP for {username}"
     message = f"OTP for {username} is: {otp}. Please enter this to complete your login."

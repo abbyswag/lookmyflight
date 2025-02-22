@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Revision List{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold">Revisions</h1>
+
+<!-- Search and Filter Options -->
+<form method="GET" class="mb-4 flex space-x-4">
+    <input type="text" name="search" placeholder="Search by Customer Name" value="{{ request.GET.search }}"
+        class="px-4 py-2 border rounded w-1/3">
+    
+    <select name="category" class="px-4 py-2 border rounded">
+        <option value="">All Categories</option>
+        {% for category in categories %}
+        <option value="{{ category }}" {% if request.GET.category == category %}selected{% endif %}>{{ category }}</option>
+        {% endfor %}
+    </select>
+    
+    <select name="status" class="px-4 py-2 border rounded">
+        <option value="">All Status</option>
+        <option value="Pending" {% if request.GET.status == 'Pending' %}selected{% endif %}>Pending</option>
+        <option value="Completed" {% if request.GET.status == 'Completed' %}selected{% endif %}>Completed</option>
+    </select>
+    
+    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Apply</button>
+</form>
+
+<div class="overflow-x-auto">
+    <table class="min-w-full bg-white border border-gray-200 mt-4 table-auto">
+        <thead>
+            <tr class="bg-gray-100">
+                <th class="p-4 border-b text-left">Booking ID</th>
+                <th class="p-4 border-b text-left">Subcategory</th>
+                <th class="p-4 border-b text-left">Status</th>
+                <th class="p-4 border-b text-left">Customer</th>
+                <th class="p-4 border-b text-left">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for revision in page_obj %}
+                <tr class="hover:bg-gray-50">
+                    <td class="p-4 border-b">{{ revision.booking.booking_id }}</td>
+                    <td class="p-4 border-b">{{ revision.subcategory }}</td>
+                    <td class="p-4 border-b">{{ revision.booking.status }}</td>
+                    <td class="p-4 border-b">{{ revision.booking.call_log.name|default:"Not available" }}</td>
+                    <td class="p-4 border-b flex space-x-4">
+                        {% if request.user|has_group:"cs_team" or request.user|has_group:"supervisor" %}
+                            <a href="{% url 'revision_edit' revision.id %}" class="text-blue-600 hover:text-blue-800">Edit Notes</a>
+                        {% endif %}
+                        <a href="{% url 'booking_detail' revision.booking.id %}" class="text-blue-600 hover:text-blue-800">View Booking</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+<div class="mt-4 flex justify-between items-center">
+    <div>
+        <p class="text-sm text-gray-600">
+            Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} revisions
+        </p>
+    </div>
+    <div>
+        <nav class="inline-flex space-x-2">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 bg-gray-200 text-gray-800 rounded">Previous</a>
+            {% endif %}
+            {% for page in page_obj.paginator.page_range %}
+                {% if page == page_obj.number %}
+                <span class="px-3 py-1 bg-blue-600 text-white rounded">{{ page }}</span>
+                {% else %}
+                <a href="?page={{ page }}" class="px-3 py-1 bg-gray-200 text-gray-800 rounded">{{ page }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 bg-gray-200 text-gray-800 rounded">Next</a>
+            {% endif %}
+        </nav>
+    </div>
+</div>
+{% endblock %}

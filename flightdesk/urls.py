@@ -1,7 +1,7 @@
 from django.urls import path
 from . import routes
 from . import api
-from flightdesk.views import basic, dashboard, revision, chat, auth, settings, bookings, price_check
+from flightdesk.views import basic, dashboard, revision, chat, auth, settings, bookings, price_check, call_logs, crm, campaigns
 from django.shortcuts import redirect
 
 def redirect_to_login(request):
@@ -11,14 +11,18 @@ urlpatterns = [
     # Base
     path('', redirect_to_login, name='root'),
 
-    # Authentication Routes
-    path('login/', auth.login_view, name='login'),
+    # Auth Routes
+    path('login/', routes.login_view, name='login'),
     path('logout/', auth.logout_view, name='logout'),
+
+    # Crm Routes
+    path('forbidden/', crm.forbidden_view, name='forbidden_page'),
 
     # Dashboard Routes
     path('dashboard/', dashboard.dashboard, name='dashboard'),
     path('dashboard/agent/', dashboard.agent_dashboard, name='agent_dashboard'),
 
+    # ApI Routes
     path('api/call-log-summary/', api.call_log_summary_api, name='call_log_summary_api'),
     path('api/booking-summary/', api.booking_summary_api, name='booking_summary_api'),
     path('api/call-log/download/', dashboard.download_call_log_excel, name='download_call_log_excel'),
@@ -28,16 +32,22 @@ urlpatterns = [
     path('api/fetch-call-log-data/', dashboard.fetch_call_log_data, name='fetch-call-log-distribution'),
     path('api/fetch-booking-locations/', dashboard.fetch_booking_locations, name='fetch-booking-locations'),
 
+    path('api/search-customers/', api.search_customers, name='search_customers'),
+    path('api/create-booking/', api.create_booking, name='create_booking'),
+    path('api/add-billing-info/', api.add_billing_info, name='add_billing_info'),
+    path('api/add-passengers/', api.add_passengers, name='add_passengers'),
+    path('api/update-booking-billing-choice/', api.update_booking_billing_choice, name='update_billing_choice'),
+
     # Staff Routes
     path('staff/create/', routes.staff_create, name='staff_create'),
     path('staff/', routes.staff_list, name='staff_list'),
 
     # CallLog Routes
-    path('call_logs/', routes.call_log_list, name='call_log_list'),
-    path('call_logs/add/', routes.call_log_create, name='call_log_add'),
-    path('call_logs/<int:pk>/', routes.call_log_detail, name='call_log_detail'),
-    path('call_logs/<int:pk>/edit/', routes.call_log_update, name='call_log_edit'),
-    path('call_logs/<int:pk>/delete/', routes.call_log_delete, name='call_log_delete'),
+    path('call_logs/', call_logs.call_log_list, name='call_log_list'),
+    path('call_logs/add/', call_logs.call_log_create, name='call_log_add'),
+    path('call_logs/<int:pk>/', call_logs.call_log_detail, name='call_log_detail'),
+    path('call_logs/<int:pk>/edit/', call_logs.call_log_update, name='call_log_edit'),
+    path('call_logs/<int:pk>/delete/', call_logs.call_log_delete, name='call_log_delete'),
 
     # Baisc Routes (for supervisor)
     path('campaigns/', routes.campaign_list, name='campaign_list'),
@@ -72,10 +82,6 @@ urlpatterns = [
     path('booking/delete/<int:pk>/', routes.booking_delete, name='booking_delete'),
     path('bookings/<int:booking_pk>/add-billing-info/', routes.billing_info, name='billing_info'),
 
-    path('api/search-customers/', api.search_customers, name='search_customers'),
-    path('api/create-booking/', api.create_booking, name='create_booking'),
-    path('api/add-billing-info/', api.add_billing_info, name='add_billing_info'),
-    path('api/add-passengers/', api.add_passengers, name='add_passengers'),
 
     path('emails/', routes.email_list, name='email_list'),
     path('emails/c/<str:booking_id>/', routes.create_email, name='create_email'),
@@ -105,6 +111,12 @@ urlpatterns = [
     path('revision-categories/<int:pk>/', basic.revision_category_detail, name='revision_category_detail'),
     path('revision-categories/<int:pk>/update/', basic.revision_category_update, name='revision_category_update'),
     path('revision-categories/<int:pk>/delete/', basic.revision_category_delete, name='revision_category_delete'),
+
+    # Capaigns Routes
+    path('camp_model/', campaigns.campaign_list, name='camp_model_list'),
+    path('camp_model/create/', campaigns.campaign_create, name='camp_model_create'),
+    path('camp_model/update/<int:campaign_id>/', campaigns.campaign_update, name='camp_model_update'),
+    path('camp_model/delete/<int:campaign_id>/', campaigns.campaign_delete, name='camp_model_delete'),
 
     path('price-check/', price_check.price_check, name='price_check'),
 ]
