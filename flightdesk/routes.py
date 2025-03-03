@@ -376,7 +376,7 @@ def email_create(request, booking_id):
             email.save()
             return redirect('email_list')
     else:
-        prefix = 'http://127.0.0.1:8000/'
+        prefix = 'https://lmfcrm.site/'
         approval_url = prefix + f'/approve/{booking.booking_id}'
         total_amount = str(booking.mco + booking.flight_cost + booking.hotel_cost + booking.vehicle_cost)
         
@@ -487,38 +487,61 @@ def approve_booking(request, booking_id):
     booking = get_object_or_404(Booking, booking_id=booking_id)
 
     if request.method == 'POST':
-        # 1. If staff is NOT filling billing (=> user must fill):
+        # 1. If staff is NOT filling billing (=> user must fill card details):
         if not booking.staff_fill_billing:
-            # Check if we already have a BillingInformation record
-            billing_exists = BillingInformation.objects.filter(booking=booking).exists()
-            if not billing_exists:
+            try:
+                # Check if we already have a BillingInformation record
+                billing_info = BillingInformation.objects.get(booking=booking)
+                
+                # Check if we need to update card information (look for placeholders)
+                if billing_info.card_number == '0000000000000000' or billing_info.card_type == 'Pending':
+                    data = request.POST
+                    # Validate card information (only what the customer provides)
+                    required_fields = [
+                        'card_type', 'card_holder_name', 'card_number', 
+                        'expiry_date', 'card_cvv'
+                    ]
+                    for field in required_fields:
+                        if field not in data or not data[field].strip():
+                            return JsonResponse({'success': False, 'error': f"{field.replace('_', ' ').capitalize()} is required and cannot be blank."})
+                    
+                    # Update only the card fields, keeping the address information
+                    # and existing contact information
+                    billing_info.card_type = data['card_type']
+                    billing_info.card_holder_name = data['card_holder_name']
+                    billing_info.card_number = data['card_number']
+                    billing_info.expiry_date = data['expiry_date']
+                    billing_info.card_cvv = data['card_cvv']
+                    # Don't update email and card_holder_number - agent will do that
+                    billing_info.save()
+            except BillingInformation.DoesNotExist:
+                # If no billing record exists (rare case), create one with all fields
                 data = request.POST
-                # Example basic validations (you can expand as needed or reuse your `add_billing_info` logic):
+                # Validate only the card fields
                 required_fields = [
-                    'card_type', 'card_holder_name', 'card_holder_number', 'email',
-                    'card_number', 'expiry_date', 'card_cvv', 'primary_address',
-                    'country', 'zipcode'
+                    'card_type', 'card_holder_name', 'card_number', 
+                    'expiry_date', 'card_cvv'
                 ]
                 for field in required_fields:
                     if field not in data or not data[field].strip():
-                        return JsonResponse({'success': False, 'error': f"{field} is required and cannot be blank."})
+                        return JsonResponse({'success': False, 'error': f"{field.replace('_', ' ').capitalize()} is required and cannot be blank."})
 
-                # Create the billing record
+                # Create the billing record with placeholder address and contact info
                 BillingInformation.objects.create(
                     booking=booking,
                     card_type=data['card_type'],
                     card_holder_name=data['card_holder_name'],
-                    card_holder_number=data['card_holder_number'],
-                    email=data['email'],
+                    card_holder_number="To be filled by agent",  # Placeholder
+                    email="pending@example.com",                # Placeholder
                     card_number=data['card_number'],
                     expiry_date=data['expiry_date'],
                     card_cvv=data['card_cvv'],
-                    primary_address=data['primary_address'],
-                    country=data['country'],
-                    zipcode=data['zipcode'],
+                    primary_address="To be filled by agent",    # Placeholder
+                    country="To be filled by agent",            # Placeholder
+                    zipcode="00000"                            # Placeholder
                 )
 
-        # 2. In both cases (staff_fill_billing = True or False), handle final signature logic:
+        # 2. In both cases, handle final signature logic:
         booking.status = 'allocating'
         booking.save()
 
@@ -559,9 +582,18 @@ def approve_booking(request, booking_id):
             # For the GET, show the 'authorizing' page
             email_body, _ = get_clened_email(booking)
             
-            # If staff_fill_billing=False, user must see billing form
-            # If staff_fill_billing=True, skip billing form
-            show_billing = not booking.staff_fill_billing
+            # Show billing form if staff is not filling billing info
+            # AND there's a placeholder billing record needing card details
+            show_billing = False
+            if not booking.staff_fill_billing:
+                try:
+                    billing_info = BillingInformation.objects.get(booking=booking)
+                    # If card number is a placeholder, we need to show the form
+                    if billing_info.card_number == '0000000000000000' or billing_info.card_type == 'Pending':
+                        show_billing = True
+                except BillingInformation.DoesNotExist:
+                    # If no billing record exists yet, we should show the form
+                    show_billing = True
 
             return render(request, 'authorizing_booking.html', {
                 'booking_id': booking.booking_id,

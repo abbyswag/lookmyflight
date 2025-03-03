@@ -107,23 +107,13 @@
       {% csrf_token %}
 
       {% if show_billing_form %}
-      <h4 class="mb-3">Billing Information</h4>
+      <h4 class="mb-3">Card Details</h4>
+      <p class="text-muted mb-3">Please provide your payment card information to complete this booking. Your contact information will be filled by your agent.</p>
       
       <div class="form-row">
         <div class="form-group col-md-6">
           <label for="card_holder_name"><i class="fas fa-user mr-1"></i> Card Holder Name</label>
           <input type="text" class="form-control" name="card_holder_name" id="card_holder_name" required>
-        </div>
-        <div class="form-group col-md-6">
-          <label for="card_holder_number"><i class="fas fa-id-card mr-1"></i> Card Holder Number</label>
-          <input type="text" class="form-control" name="card_holder_number" id="card_holder_number" required>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group col-md-6">
-          <label for="email"><i class="fas fa-envelope mr-1"></i> Email</label>
-          <input type="email" class="form-control" name="email" id="email" required>
         </div>
         <div class="form-group col-md-6">
           <label for="card_type"><i class="fas fa-credit-card mr-1"></i> Card Type</label>
@@ -147,26 +137,11 @@
         </div>
       </div>
 
-      <div class="form-row">
-        <div class="form-group col-md-6">
-          <label for="card_cvv"><i class="fas fa-lock mr-1"></i> CVV</label>
-          <input type="text" class="form-control" name="card_cvv" id="card_cvv" required>
-        </div>
-        <div class="form-group col-md-6">
-          <label for="zipcode"><i class="fas fa-map-pin mr-1"></i> ZIP Code</label>
-          <input type="text" class="form-control" name="zipcode" id="zipcode" required>
-        </div>
-      </div>
-
       <div class="form-group">
-        <label for="primary_address"><i class="fas fa-home mr-1"></i> Billing Address</label>
-        <textarea class="form-control" name="primary_address" id="primary_address" rows="2" required></textarea>
+        <label for="card_cvv"><i class="fas fa-lock mr-1"></i> CVV</label>
+        <input type="text" class="form-control" name="card_cvv" id="card_cvv" required>
       </div>
-
-      <div class="form-group">
-        <label for="country"><i class="fas fa-flag mr-1"></i> Country</label>
-        <input type="text" class="form-control" name="country" id="country" required>
-      </div>
+      
       <hr>
       {% endif %}
       

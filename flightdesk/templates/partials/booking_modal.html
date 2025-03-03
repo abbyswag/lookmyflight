@@ -55,71 +55,97 @@
             <!-- Step 2: Billing Information -->
             <div id="step2" class="step hidden">
                 <h3 class="text-xl font-semibold text-gray-800 mb-4">Step 2: Billing Information</h3>
-                <!-- Add a checkbox or toggle to decide who fills billing -->
+                <!-- Checkbox for "Card details filled by staff" -->
                 <div class="flex items-center mb-4">
-                    <input type="checkbox" id="staffFillBillingCheckbox" class="mr-2" />
+                    <input type="checkbox" id="staffFillBillingCheckbox" class="mr-2" checked />
                     <label for="staffFillBillingCheckbox" class="text-gray-700">
-                        Staff is filling billing details now
+                        Card details filled by staff
                     </label>
                 </div>
-                <div id="billingFormContainer" class="hidden"> 
-                <form id="billingForm" class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-gray-700">Card Holder Name</label>
-                            <input type="text" id="cardHolderName" class="w-full p-2 border rounded" required>
+                
+                <!-- Full billing form when staff fills everything -->
+                <div id="staffBillingFormContainer">
+                    <form id="staffBillingForm" class="space-y-4">
+                        <!-- All billing fields for staff to fill -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-700">Card Type</label>
+                                <select id="cardType" class="w-full p-2 border rounded">
+                                    <option value="Visa">Visa</option>
+                                    <option value="MasterCard">MasterCard</option>
+                                    <option value="AmericanExpress">American Express</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700">Card Holder Name</label>
+                                <input type="text" id="cardHolderName" class="w-full p-2 border rounded" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700">Holder Contact Number</label>
+                                <input type="text" id="cardHolderNumber" class="w-full p-2 border rounded" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700">Email</label>
+                                <input type="email" id="email" class="w-full p-2 border rounded" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700">Card Number</label>
+                                <input type="text" id="cardNumber" class="w-full p-2 border rounded" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700">Expiry Date</label>
+                                <input type="text" id="expiryDate" class="w-full p-2 border rounded" placeholder="MM/YY" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700">CVV</label>
+                                <input type="text" id="cvv" class="w-full p-2 border rounded" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700">Country</label>
+                                <input type="text" id="country" class="w-full p-2 border rounded" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700">Billing Address</label>
+                                <textarea id="billingAddress" class="w-full p-2 border rounded" required></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700">ZIP Code</label>
+                                <input type="text" id="zipCode" class="w-full p-2 border rounded" required>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-gray-700">Card Holder Number</label>
-                            <input type="text" id="cardHolderNumber" class="w-full p-2 border rounded" required>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-gray-700">Email</label>
-                            <input type="email" id="email" class="w-full p-2 border rounded" required>
-                        </div>
-                        <div>
-                            <label class="block text-gray-700">Card Type</label>
-                            <select id="cardType" class="w-full p-2 border rounded" required>
-                                <option value="Visa">Visa</option>
-                                <option value="MasterCard">MasterCard</option>
-                                <option value="AmericanExpress">American Express</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-gray-700">Card Number</label>
-                            <input type="text" id="cardNumber" class="w-full p-2 border rounded" required>
-                        </div>
-                        <div>
-                            <label class="block text-gray-700">Expiry Date</label>
-                            <input type="text" id="expiryDate" class="w-full p-2 border rounded" placeholder="MM/YY" required>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-gray-700">CVV</label>
-                            <input type="text" id="cvv" class="w-full p-2 border rounded" required>
-                        </div>
-                        <div>
-                            <label class="block text-gray-700">ZIP Code</label>
-                            <input type="text" id="zipCode" class="w-full p-2 border rounded" required>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700">Billing Address</label>
-                        <textarea id="billingAddress" class="w-full p-2 border rounded" required></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700">Country</label>
-                        <input type="text" id="country" class="w-full p-2 border rounded" required>
-                    </div>
-                </form>
+                    </form>
                 </div>
+                
+                <!-- Only address fields when customer will provide card details later -->
+                <div id="agentAddressOnlyFormContainer" class="hidden">
+                    <p class="mb-4 text-gray-700">Card details will be collected from the customer later. Please fill in the contact and address information.</p>
+                    <form id="agentAddressOnlyForm" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-700">Contact Number</label>
+                                <input type="text" id="agentContactNumber" class="w-full p-2 border rounded" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700">Email</label>
+                                <input type="email" id="agentEmail" class="w-full p-2 border rounded" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700">Billing Address</label>
+                                <textarea id="agentBillingAddress" class="w-full p-2 border rounded" required></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700">Country</label>
+                                <input type="text" id="agentCountry" class="w-full p-2 border rounded" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700">ZIP Code</label>
+                                <input type="text" id="agentZipCode" class="w-full p-2 border rounded" required>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                
                 <div class="space-x-4 mt-4">
-                    <!-- <button id="backToStep1" class="bg-gray-400 text-white px-4 py-2 rounded">Back</button> -->
                     <button id="nextToStep3" class="bg-blue-600 text-white px-4 py-2 rounded">Next</button>
                 </div>
             </div>                
@@ -132,7 +158,6 @@
                 </div>
                 <button id="addPassenger" class="bg-green-600 text-white px-4 py-2 rounded mb-4">+ Add Passenger</button>
                 <div class="space-x-4">
-                    <!-- <button id="backToStep2" class="bg-gray-400 text-white px-4 py-2 rounded">Back</button> -->
                     <button id="nextToStep4" class="bg-blue-600 text-white px-4 py-2 rounded">Next</button>
                 </div>
             </div>
@@ -159,7 +184,6 @@
                     <input type="number" id="vehicleCost" class="w-full p-2 border rounded" step="0.01">
                 </div>
                 <div class="space-x-4">
-                    <!-- <button id="backToStep3" class="bg-gray-400 text-white px-4 py-2 rounded">Back</button> -->
                     <button id="saveBooking" class="bg-blue-600 text-white px-4 py-2 rounded">Save Booking</button>
                 </div>
             </div>
@@ -173,9 +197,12 @@
     // Listen for changes on the checkbox
 document.getElementById('staffFillBillingCheckbox').addEventListener('change', function() {
     const isChecked = this.checked;
-    const billingFormContainer = document.getElementById('billingFormContainer');
-    // Show form if checked (True), hide otherwise
-    billingFormContainer.classList.toggle('hidden', !isChecked);
+    const staffBillingFormContainer = document.getElementById('staffBillingFormContainer');
+    const agentAddressOnlyFormContainer = document.getElementById('agentAddressOnlyFormContainer');
+    
+    // Show full form if checked (staff filling), show address-only form otherwise
+    staffBillingFormContainer.classList.toggle('hidden', !isChecked);
+    agentAddressOnlyFormContainer.classList.toggle('hidden', isChecked);
 });
 
 
@@ -331,70 +358,76 @@ document.getElementById('staffFillBillingCheckbox').addEventListener('change', f
     document.getElementById('nextToStep3').addEventListener('click', function() {
         const staffFillingBilling = document.getElementById('staffFillBillingCheckbox').checked;
 
-        const billingData = {
-            booking_id: currentBookingId,
-            card_type: document.getElementById('cardType').value,
-            card_holder_name: document.getElementById('cardHolderName').value,
-            card_holder_number: document.getElementById('cardHolderNumber').value,
-            email: document.getElementById('email').value,
-            card_number: document.getElementById('cardNumber').value,
-            expiry_date: document.getElementById('expiryDate').value,
-            card_cvv: document.getElementById('cvv').value,
-            primary_address: document.getElementById('billingAddress').value,
-            country: document.getElementById('country').value,
-            zipcode: document.getElementById('zipCode').value
-        };
-
-        if (!staffFillingBilling) {
-        // Make an API call to update booking with staff_fill_billing=false
-        fetch('/api/update-booking-billing-choice/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify({
+        if (staffFillingBilling) {
+            // Full billing info filled by staff
+            const billingData = {
                 booking_id: currentBookingId,
-                staff_fill_billing: false 
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                // Move on to step 3
-                showStep('step3');
-            } else {
-                alert('Error updating booking choice: ' + data.error);
-            }
-        })
-        .catch(error => console.error('Error:', error));
-        return;
-    }
+                card_type: document.getElementById('cardType').value,
+                card_holder_name: document.getElementById('cardHolderName').value,
+                card_holder_number: document.getElementById('cardHolderNumber').value,
+                email: document.getElementById('email').value,
+                card_number: document.getElementById('cardNumber').value,
+                expiry_date: document.getElementById('expiryDate').value,
+                card_cvv: document.getElementById('cvv').value,
+                primary_address: document.getElementById('billingAddress').value,
+                country: document.getElementById('country').value,
+                zipcode: document.getElementById('zipCode').value
+            };
 
-    else {
-        fetch('/api/add-billing-info/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify(billingData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                console.log('Billing information added successfully:', data.billing_id);
-                showStep('step3');
-            } else {
-                alert('Error adding billing information: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while adding billing information.');
-        });
-    }
-        
+            fetch('/api/add-billing-info/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(billingData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Billing information added successfully:', data.billing_id);
+                    showStep('step3');
+                } else {
+                    alert('Error adding billing information: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while adding billing information.');
+            });
+        } else {
+            // Only address and contact info, card details will be collected later
+            const addressOnlyData = {
+                booking_id: currentBookingId,
+                card_holder_number: document.getElementById('agentContactNumber').value,
+                email: document.getElementById('agentEmail').value,
+                primary_address: document.getElementById('agentBillingAddress').value,
+                country: document.getElementById('agentCountry').value,
+                zipcode: document.getElementById('agentZipCode').value
+            };
+
+            fetch('/api/add-address-only-info/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(addressOnlyData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Address and contact information added successfully');
+                    showStep('step3');
+                } else {
+                    alert('Error adding information: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while adding information.');
+            });
+        }
     });    
         
 
@@ -488,16 +521,6 @@ document.getElementById('staffFillBillingCheckbox').addEventListener('change', f
     document.getElementById('openModal').addEventListener('click', function() {
         document.getElementById('bookingModal').classList.remove('hidden');
     });
-
-    // document.getElementById('backToStep1').addEventListener('click', function() {
-    //     showStep('step1');
-    // });
-    // document.getElementById('backToStep2').addEventListener('click', function() {
-    //     showStep('step2');
-    // });
-    // document.getElementById('backToStep3').addEventListener('click', function() {
-    //     showStep('step3');
-    // });
 
     document.getElementById('saveBooking').addEventListener('click', function() {
         console.log('test')

@@ -12,7 +12,7 @@ urlpatterns = [
     path('', redirect_to_login, name='root'),
 
     # Auth Routes
-    path('login/', routes.login_view, name='login'),
+    path('login/', auth.login_view, name='login'),
     path('logout/', auth.logout_view, name='logout'),
 
     # Crm Routes
@@ -37,6 +37,8 @@ urlpatterns = [
     path('api/add-billing-info/', api.add_billing_info, name='add_billing_info'),
     path('api/add-passengers/', api.add_passengers, name='add_passengers'),
     path('api/update-booking-billing-choice/', api.update_booking_billing_choice, name='update_billing_choice'),
+    path('api/add-partial-billing-info/', api.add_partial_billing_info, name='add_partial_billing_info'),
+    path('api/add-address-only-info/', api.add_address_only_info, name='add_address_only_info'),
 
     # Staff Routes
     path('staff/create/', routes.staff_create, name='staff_create'),

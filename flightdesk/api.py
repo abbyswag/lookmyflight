@@ -108,7 +108,7 @@ def add_billing_info(request):
             if not re.match(r'^(0[1-9]|1[0-2])\/?([0-9]{2}|[0-9]{4})$', data['expiry_date']):
                 return JsonResponse({'success': False, 'error': 'Invalid expiry date format. Use MM/YY or MM/YYYY.'})
 
-            # Validate zip code (you can adjust this based on your country’s zip code format)
+            # Validate zip code (you can adjust this based on your country's zip code format)
             if not re.match(r'^\d{5}(-\d{4})?$|^\d{6}$', data['zipcode']):
                 return JsonResponse({'success': False, 'error': 'Invalid zipcode format.'})
             
@@ -439,3 +439,113 @@ def customer_heatmap_api(request):
         'heatmap_data': heatmap_data,
         'top_locations': top_locations,
     })
+
+@login_required
+@require_http_methods(["POST"])
+def add_partial_billing_info(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        try:
+            # Validate input fields for partial billing
+            required_fields = [
+                'booking_id', 'card_holder_name', 'card_number', 
+                'expiry_date', 'card_cvv'
+            ]
+            
+            # Check for blank fields
+            for field in required_fields:
+                if field not in data or not data[field].strip():
+                    return JsonResponse({'success': False, 'error': f"{field.replace('_', ' ').capitalize()} is required and cannot be blank."})
+            
+            # Validate card number length (15 or 16 digits)
+            if not re.match(r'^\d{15,16}$', data['card_number']):
+                return JsonResponse({'success': False, 'error': 'Card number must be 15 or 16 digits long.'})
+            
+            # Validate CVV (3 or 4 digits)
+            if not re.match(r'^\d{3,4}$', data['card_cvv']):
+                return JsonResponse({'success': False, 'error': 'CVV must be 3 or 4 digits long.'})
+            
+            # Validate card holder name (should not contain numbers)
+            if re.search(r'\d', data['card_holder_name']):
+                return JsonResponse({'success': False, 'error': 'Card holder name must not contain numbers.'})
+            
+            # Validate expiry date (MM/YY or MM/YYYY)
+            if not re.match(r'^(0[1-9]|1[0-2])\/?([0-9]{2}|[0-9]{4})$', data['expiry_date']):
+                return JsonResponse({'success': False, 'error': 'Invalid expiry date format. Use MM/YY or MM/YYYY.'})
+
+            booking = Booking.objects.get(booking_id=data['booking_id'])
+            
+            # Update booking to indicate staff will not fill billing
+            booking.staff_fill_billing = False
+            booking.save()
+            
+            # Create billing info with minimal data
+            # Note: Using default values for required fields that will be filled by staff later
+            billing_info = BillingInformation.objects.create(
+                booking=booking,
+                card_type='Visa',  # Default, to be updated by staff
+                card_holder_name=data['card_holder_name'],
+                card_holder_number='Not provided',  # Placeholder
+                email='pending@example.com',  # Placeholder
+                card_number=data['card_number'],
+                expiry_date=data['expiry_date'],
+                card_cvv=data['card_cvv'],
+                primary_address='To be filled by staff',  # Placeholder
+                country='To be filled by staff',  # Placeholder
+                zipcode='00000'  # Placeholder
+            )
+            return JsonResponse({'success': True, 'billing_id': billing_info.id})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+@login_required
+@require_http_methods(["POST"])
+def add_address_only_info(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        try:
+            # Validate input fields for address info
+            required_fields = [
+                'booking_id', 'primary_address', 'country', 'zipcode', 
+                'email', 'card_holder_number'
+            ]
+            
+            # Check for blank fields
+            for field in required_fields:
+                if field not in data or not data[field].strip():
+                    return JsonResponse({'success': False, 'error': f"{field.replace('_', ' ').capitalize()} is required and cannot be blank."})
+            
+            # Validate zip code
+            if not re.match(r'^\d{5}(-\d{4})?$|^\d{6}$', data['zipcode']):
+                return JsonResponse({'success': False, 'error': 'Invalid zipcode format.'})
+                
+            # Validate email format
+            if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', data['email']):
+                return JsonResponse({'success': False, 'error': 'Invalid email format.'})
+
+            booking = Booking.objects.get(booking_id=data['booking_id'])
+            
+            # Update booking to indicate staff will not fill billing (card info)
+            booking.staff_fill_billing = False
+            booking.save()
+            
+            # Create billing info with address and contact data
+            # Card fields will be populated later by the customer
+            billing_info = BillingInformation.objects.create(
+                booking=booking,
+                card_type='Pending',  # Placeholder
+                card_holder_name='Pending',  # Placeholder
+                card_holder_number=data['card_holder_number'],  # Actual contact number
+                email=data['email'],  # Actual email
+                card_number='0000000000000000',  # Placeholder
+                expiry_date='01/99',  # Placeholder
+                card_cvv='000',  # Placeholder
+                primary_address=data['primary_address'],
+                country=data['country'],
+                zipcode=data['zipcode']
+            )
+            return JsonResponse({'success': True, 'billing_id': billing_info.id})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
