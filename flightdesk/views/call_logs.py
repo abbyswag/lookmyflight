@@ -47,7 +47,7 @@ def call_log_list(request):
     call_logs = CallLog.objects.filter(filters).select_related('tag', 'added_by').order_by('-call_date')
 
     # Pagination (10 call logs per page)
-    paginator = Paginator(call_logs, 10)
+    paginator = Paginator(call_logs, 100)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 

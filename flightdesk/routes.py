@@ -376,7 +376,7 @@ def email_create(request, booking_id):
             email.save()
             return redirect('email_list')
     else:
-        prefix = 'https://lmfcrm.site/'
+        prefix = 'https://lmfcrm.site'
         approval_url = prefix + f'/approve/{booking.booking_id}'
         total_amount = str(booking.mco + booking.flight_cost + booking.hotel_cost + booking.vehicle_cost)
         
