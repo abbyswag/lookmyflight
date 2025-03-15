@@ -14,6 +14,9 @@ from django.core.mail import EmailMessage
 from django.conf import settings
 import threading
 from django.contrib import messages
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Authentication Views
 def login_view(request):
@@ -647,6 +650,9 @@ def email_send(request, pk):
     # Define a function to send email in background
     def send_email_task():
         try:
+            print(f"[EMAIL] Starting to send email {pk} to {email.recipient}")
+            print(f"[EMAIL] Using smtp settings: {settings.EMAIL_HOST}:{settings.EMAIL_PORT}")
+            
             # Create and send the email
             msg = EmailMessage(
                 subject=email.subject,
@@ -655,21 +661,27 @@ def email_send(request, pk):
                 to=[email.recipient]
             )
             msg.content_subtype = "html"
+            
+            print(f"[EMAIL] About to call send() method")
             msg.send()
+            print(f"[EMAIL] Email sent successfully")
 
             # Update statuses after successful sending
             email.status = 'sent'
             email.save()
-
             booking.status = 'authorizing'
             booking.save()
             
             print(f"Email {pk} successfully sent in background")
         except Exception as e:
+            # Get detailed error information
+            import traceback
+            print(f"[EMAIL ERROR] {str(e)}")
+            print(f"[EMAIL ERROR] Traceback: {traceback.format_exc()}")
+            
             # Update status to indicate failure
             email.status = 'failed'
             email.save()
-            print(f"Error sending email in background: {e}")
 
     # Start email sending in a separate thread
     email_thread = threading.Thread(target=send_email_task)
