@@ -175,16 +175,17 @@ class EmailAttachtment(models.Model):
 
 
 class Email(models.Model):
-
     STATUS_CHOICES = (
         ('draft', 'Draft'),
+        ('sending', 'Sending'),
         ('sent', 'Sent'),
+        ('failed', 'Failed'),
     )
 
     subject = models.CharField(max_length=255)
     recipient = models.EmailField()
     body = models.TextField()
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft')
     booking= models.ForeignKey('Booking', on_delete=models.CASCADE, default=None)
 
 

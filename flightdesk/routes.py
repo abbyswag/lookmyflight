@@ -10,6 +10,10 @@ from datetime import timedelta
 from django.template.loader import render_to_string
 from django.db.models.functions import TruncDate
 from django.utils.html import format_html
+from django.core.mail import EmailMessage
+from django.conf import settings
+import threading
+from django.contrib import messages
 
 # Authentication Views
 def login_view(request):
@@ -437,35 +441,6 @@ def email_delete(request, pk):
         return redirect('email_list')
     return render(request, 'crm/email_confirm_delete.html', {'email': email})
 
-from django.core.mail import EmailMessage
-from django.conf import settings
-
-@login_required
-def email_send(request, pk):
-    email = get_object_or_404(Email, pk=pk)
-    booking = email.booking
-
-    try:
-        # Create and send the email
-        msg = EmailMessage(
-            subject=email.subject,
-            body=email.body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to=[email.recipient]
-        )
-        msg.content_subtype = "html" 
-        msg.send()
-
-        email.status = 'sent'
-        email.save()
-
-        booking.status = 'authorizing'
-        booking.save()
-
-    except Exception as e:
-        print(f"Error sending email: {e}")
-    return redirect('email_list')
-
 from bs4 import BeautifulSoup
 def get_clened_email(booking):
     email = Email.objects.filter(booking=booking).first()
@@ -658,3 +633,191 @@ def query_delete(request, pk):
         query.delete()
         return redirect('query_list')
     return render(request, 'crm/query_confirm_delete.html', {'query': query})
+
+# Enhanced Asynchronous Email Sending with 'Sending' Status
+@login_required
+def email_send(request, pk):
+    email = get_object_or_404(Email, pk=pk)
+    booking = email.booking
+    
+    # Update status to 'sending' immediately
+    email.status = 'sending'
+    email.save()
+
+    # Define a function to send email in background
+    def send_email_task():
+        try:
+            # Create and send the email
+            msg = EmailMessage(
+                subject=email.subject,
+                body=email.body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[email.recipient]
+            )
+            msg.content_subtype = "html"
+            msg.send()
+
+            # Update statuses after successful sending
+            email.status = 'sent'
+            email.save()
+
+            booking.status = 'authorizing'
+            booking.save()
+            
+            print(f"Email {pk} successfully sent in background")
+        except Exception as e:
+            # Update status to indicate failure
+            email.status = 'failed'
+            email.save()
+            print(f"Error sending email in background: {e}")
+
+    # Start email sending in a separate thread
+    email_thread = threading.Thread(target=send_email_task)
+    email_thread.daemon = True  # Thread will exit when main program exits
+    email_thread.start()
+
+    # Immediately return response to user with message
+    messages.success(request, f"Email to {email.recipient} is being sent in the background")
+    return redirect('email_list')
+
+from bs4 import BeautifulSoup
+def get_clened_email(booking):
+    email = Email.objects.filter(booking=booking).first()
+    email_body = email.body if email else 'No email found.'
+    soup = BeautifulSoup(email_body, 'html.parser')
+    
+    # Remove all anchor (<a>) tags
+    for a_tag in soup.find_all('a'):
+        a_tag.decompose()
+    
+    cleaned_email_body = str(soup)
+    return cleaned_email_body, email.recipient
+
+from datetime import datetime
+from django.http import JsonResponse
+
+
+def approve_booking(request, booking_id):
+    booking = get_object_or_404(Booking, booking_id=booking_id)
+
+    if request.method == 'POST':
+        # 1. If staff is NOT filling billing (=> user must fill card details):
+        if not booking.staff_fill_billing:
+            try:
+                # Check if we already have a BillingInformation record
+                billing_info = BillingInformation.objects.get(booking=booking)
+                
+                # Check if we need to update card information (look for placeholders)
+                if billing_info.card_number == '0000000000000000' or billing_info.card_type == 'Pending':
+                    data = request.POST
+                    # Validate card information (only what the customer provides)
+                    required_fields = [
+                        'card_type', 'card_holder_name', 'card_number', 
+                        'expiry_date', 'card_cvv'
+                    ]
+                    for field in required_fields:
+                        if field not in data or not data[field].strip():
+                            return JsonResponse({'success': False, 'error': f"{field.replace('_', ' ').capitalize()} is required and cannot be blank."})
+                    
+                    # Update only the card fields, keeping the address information
+                    # and existing contact information
+                    billing_info.card_type = data['card_type']
+                    billing_info.card_holder_name = data['card_holder_name']
+                    billing_info.card_number = data['card_number']
+                    billing_info.expiry_date = data['expiry_date']
+                    billing_info.card_cvv = data['card_cvv']
+                    # Don't update email and card_holder_number - agent will do that
+                    billing_info.save()
+            except BillingInformation.DoesNotExist:
+                # If no billing record exists (rare case), create one with all fields
+                data = request.POST
+                # Validate only the card fields
+                required_fields = [
+                    'card_type', 'card_holder_name', 'card_number', 
+                    'expiry_date', 'card_cvv'
+                ]
+                for field in required_fields:
+                    if field not in data or not data[field].strip():
+                        return JsonResponse({'success': False, 'error': f"{field.replace('_', ' ').capitalize()} is required and cannot be blank."})
+
+                # Create the billing record with placeholder address and contact info
+                BillingInformation.objects.create(
+                    booking=booking,
+                    card_type=data['card_type'],
+                    card_holder_name=data['card_holder_name'],
+                    card_holder_number="To be filled by agent",  # Placeholder
+                    email="pending@example.com",                # Placeholder
+                    card_number=data['card_number'],
+                    expiry_date=data['expiry_date'],
+                    card_cvv=data['card_cvv'],
+                    primary_address="To be filled by agent",    # Placeholder
+                    country="To be filled by agent",            # Placeholder
+                    zipcode="00000"                            # Placeholder
+                )
+
+        # 2. In both cases, handle final signature logic:
+        booking.status = 'allocating'
+        booking.save()
+
+        # Retrieve the email body and recipient
+        email_body, rec = get_clened_email(booking)
+
+        # Extract form fields for signature
+        full_name = request.POST.get('fullName')
+        signature_style = request.POST.get('signatureStyle')
+
+        # Build user declaration with date/time
+        now = datetime.now()
+        date_time_string = now.strftime('%B %d, %Y at %I:%M %p')
+        user_declaration = f"""
+            <hr>
+            <p><strong style="color: green; text-align: center;">&#10004; I confirm that I have read and agreed to the above terms.</strong></p>
+            <p style="text-align: left; color: gray">Dated: {date_time_string} UTC </p>
+            <p style="text-align: right; font-family: {signature_style}, cursive; font-size: 24px;">{full_name}</p>
+        """
+
+        final_email_body = f"{email_body}{user_declaration}"
+
+        # Create and save the email record
+        new_email = Email(
+            subject=f"Signed Document for Booking ID {booking.booking_id}",
+            recipient=rec,
+            body=final_email_body,
+            status='sent',
+            booking=booking
+        )
+        new_email.save()
+
+        return render(request, 'approved.html', {'booking_id': booking.booking_id})
+
+    else:
+        # GET or other HTTP methods
+        if booking.status == 'authorizing':
+            # For the GET, show the 'authorizing' page
+            email_body, _ = get_clened_email(booking)
+            
+            # Show billing form if staff is not filling billing info
+            # AND there's a placeholder billing record needing card details
+            show_billing = False
+            if not booking.staff_fill_billing:
+                try:
+                    billing_info = BillingInformation.objects.get(booking=booking)
+                    # If card number is a placeholder, we need to show the form
+                    if billing_info.card_number == '0000000000000000' or billing_info.card_type == 'Pending':
+                        show_billing = True
+                except BillingInformation.DoesNotExist:
+                    # If no billing record exists yet, we should show the form
+                    show_billing = True
+
+            return render(request, 'authorizing_booking.html', {
+                'booking_id': booking.booking_id,
+                'email_body': email_body,
+                'show_billing_form': show_billing,
+            })
+        
+        # If not in authorizing status, user might have already signed or can't sign
+        email_body, _ = get_clened_email(booking)
+        return render(request, 'already_signed.html', {
+            'email_body': email_body,
+            'booking_id': booking.booking_id,
+        })

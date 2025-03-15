@@ -6,6 +6,7 @@ from django.conf import settings
 import random
 from django.core.mail import EmailMessage
 from django.core.mail.backends.smtp import EmailBackend
+import threading
 
 from django.contrib.auth.models import User
 
@@ -15,20 +16,30 @@ def generate_otp():
 
 
 def send_otp_email(email, otp, username):
-    subject = f"OTP for {username}"
-    message = f"OTP for {username} is: {otp}. Please enter this to complete your login."
-    from_email = "dualnature67@gmail.com"
+    # Create a function to be executed in a separate thread
+    def send_mail_task():
+        try:
+            subject = f"OTP for {username}"
+            message = f"OTP for {username} is: {otp}. Please enter this to complete your login."
+            from_email = "dualnature67@gmail.com"
 
-    email_backend = EmailBackend(
-        host=settings.EMAIL_HOST,
-        port=settings.EMAIL_PORT,
-        username=settings.SECONDARY_EMAIL_CONFIG['EMAIL_HOST_USER'],
-        password=settings.SECONDARY_EMAIL_CONFIG['EMAIL_HOST_PASSWORD'],
-        use_tls=settings.EMAIL_USE_TLS,
-    )
-    print(email_backend)
-    email_message = EmailMessage(subject, message, from_email, [email], connection=email_backend)
-    email_message.send()
+            email_backend = EmailBackend(
+                host=settings.EMAIL_HOST,
+                port=settings.EMAIL_PORT,
+                username=settings.SECONDARY_EMAIL_CONFIG['EMAIL_HOST_USER'],
+                password=settings.SECONDARY_EMAIL_CONFIG['EMAIL_HOST_PASSWORD'],
+                use_tls=settings.EMAIL_USE_TLS,
+            )
+            email_message = EmailMessage(subject, message, from_email, [email], connection=email_backend)
+            email_message.send()
+            print(f"OTP email sent successfully to {email}")
+        except Exception as e:
+            print(f"Error sending OTP email: {e}")
+    
+    # Start email sending in a separate thread
+    email_thread = threading.Thread(target=send_mail_task)
+    email_thread.daemon = True
+    email_thread.start()
 
 
 def login_view(request):
@@ -58,7 +69,10 @@ def login_view(request):
                 otp = generate_otp()
                 request.session['otp'] = otp
                 request.session['otp_user_id'] = user.id
+                
+                # Send OTP email asynchronously
                 send_otp_email('support@lookmyflight.com', otp, username)
+                
                 # Step 2: Show OTP form
                 return render(request, 'crm/otp.html', {'email': 'support@lookmyflight.com'})
             else:
