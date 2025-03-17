@@ -12,7 +12,7 @@ urlpatterns = [
     path('', redirect_to_login, name='root'),
 
     # Auth Routes
-    path('login/', auth.login_view, name='login'),
+    path('login/', routes.login_view, name='login'),
     path('logout/', auth.logout_view, name='logout'),
 
     # Crm Routes
