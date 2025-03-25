@@ -7,7 +7,7 @@
   <h2 style="text-align: center;">Please Confirm This Booking</h2>
   <p style="text-align: center;">
   {% for b in billing_info %}
-  I, {{b.card_holder_name}} has authorize LOOKMYFLIGHT to confirm my booking by charging my Credit/Debit card, ending with <b>{{b.card_number|slice:"-4:"}}</b> for amount ({{booking.currency}} <b>{{total_amount}}</b>) to book the below itinerary.
+  I authorize LOOKMYFLIGHT to confirm my booking by charging my Credit/Debit card</b> for amount ({{booking.currency}} <b>{{total_amount}}</b>) to book the below itinerary.
   {% endfor %}  
   </p>
   <p style="text-align: center;">
@@ -145,7 +145,7 @@
   </table>
 </div>
 
-
+{% if approval_url %}
 <div>
   <p style="text-align: center;"> You may see more than one transaction on your card but will not exceed the total amount as advised.</p>
   <p style="text-align: center;">By Clicking on the Authorize button, you agree to the above mentioned terms.</p>
@@ -156,5 +156,6 @@
   </div>
 </div>
 <br>
+{% endif %}
 
 {% endblock %}

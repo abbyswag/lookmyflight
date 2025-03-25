@@ -141,7 +141,7 @@ class Booking(models.Model):
 
     booking_id = models.CharField(max_length=20, unique=True, default=generate_mybooking_id, editable=False)
     currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES)
-    mco = models.FloatField(default= 0)
+    mco = models.DecimalField(max_digits=10, decimal_places=2, default= 0)
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='initiated')
     created_at = models.DateTimeField(auto_now_add=True)
     remark = models.TextField(blank=True)
@@ -157,9 +157,9 @@ class Booking(models.Model):
 
     call_log = models.ForeignKey(CallLog, on_delete=models.SET_NULL, null=True, blank=True)
 
-    flight_cost = models.FloatField(default= 0)
-    hotel_cost = models.FloatField(default= 0)
-    vehicle_cost = models.FloatField(default= 0)
+    flight_cost = models.DecimalField(max_digits=10, decimal_places=2, default= 0)
+    hotel_cost = models.DecimalField(max_digits=10, decimal_places=2, default= 0)
+    vehicle_cost = models.DecimalField(max_digits=10, decimal_places=2, default= 0)
     
     flight_info_img = models.ImageField(upload_to='booking/flight_info/', null=True, blank=True)
     hotel_info_img = models.ImageField(upload_to='booking/hotel_info/', null=True, blank=True)
