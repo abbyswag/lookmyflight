@@ -110,7 +110,7 @@ class EmailForm(forms.ModelForm):
         for img in soup.find_all('img'):
             src = img.get('src')
             if src.startswith('/media/'):
-                img['src'] = f'https://lmfcrm.site{src}'
+                img['src'] = f'http://35.182.117.59:8000{src}'
         
         return str(soup)
 
