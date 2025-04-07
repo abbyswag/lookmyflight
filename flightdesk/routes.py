@@ -739,9 +739,12 @@ def email_send(request, pk):
             email.save()
 
     # Start email sending in a separate thread
-    email_thread = threading.Thread(target=send_email_task)
-    email_thread.daemon = True  # Thread will exit when main program exits
-    email_thread.start()
+    # email_thread = threading.Thread(target=send_email_task)
+    # email_thread.daemon = True  # Thread will exit when main program exits
+    # email_thread.start()
+
+    # send the email immediately
+    send_email_task()
 
     # Immediately return response to user with message
     messages.success(request, f"Email to {email.recipient} is being sent in the background")
