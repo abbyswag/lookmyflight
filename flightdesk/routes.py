@@ -695,57 +695,50 @@ def query_delete(request, pk):
 # Enhanced Asynchronous Email Sending with 'Sending' Status
 @login_required
 def email_send(request, pk):
-    email = get_object_or_404(Email, pk=pk)
-    booking = email.booking
-    
-    # Update status to 'sending' immediately
-    email.status = 'sending'
-    email.save()
+    try:
+        email = get_object_or_404(Email, pk=pk)
+        booking = email.booking
+        
+        # Update status to 'sending' immediately
+        email.status = 'sending'
+        email.save()
 
-    # Define a function to send email in background
-    def send_email_task():
-        try:
-            print(f"[EMAIL] Starting to send email {pk} to {email.recipient}")
-            print(f"[EMAIL] Using smtp settings: {settings.EMAIL_HOST}:{settings.EMAIL_PORT}")
-            
-            # Create and send the email
-            msg = EmailMessage(
-                subject=email.subject,
-                body=email.body,
-                from_email=settings.EMAIL_HOST_USER,
-                to=[email.recipient],
-            )
-            msg.content_subtype = "html"
-            
-            print(f"[EMAIL] About to call send() method")
-            msg.send()
-            print(f"[EMAIL] Email sent successfully")
+        # Define a function to send email
+        def send_email_task():
+            try:
+                # Create the email message
+                msg = EmailMessage(
+                    subject=email.subject,
+                    body=email.body,
+                    from_email=settings.EMAIL_HOST_USER,
+                    to=[email.recipient],
+                )
+                msg.content_subtype = "html"
+                
+                # Send the email
+                msg.send(fail_silently=False)
 
-            # Update statuses after successful sending
-            email.status = 'sent'
-            email.save()
-            booking.status = 'authorizing'
-            booking.save()
-            
-            print(f"Email {pk} successfully sent in background")
-        except Exception as e:
-            # Get detailed error information
-            import traceback
-            print(f"[EMAIL ERROR] {str(e)}")
-            print(f"[EMAIL ERROR] Traceback: {traceback.format_exc()}")
-            
-            # Update status to indicate failure
-            email.status = 'failed'
-            email.save()
+                # Update statuses after successful sending
+                email.status = 'sent'
+                email.save()
+                booking.status = 'authorizing'
+                booking.save()
+                
+                logger.info(f"Email {pk} successfully sent to {email.recipient}")
+                
+            except Exception as e:
+                logger.error(f"Failed to send email {pk}: {str(e)}")
+                email.status = 'failed'
+                email.save()
+                raise  # Re-raise the exception for the outer try-except block
 
-    # Start email sending in a separate thread
-    # email_thread = threading.Thread(target=send_email_task)
-    # email_thread.daemon = True  # Thread will exit when main program exits
-    # email_thread.start()
+        # Send the email immediately
+        send_email_task()
 
-    # send the email immediately
-    send_email_task()
+        messages.success(request, f"Email sent successfully to {email.recipient}")
+        return redirect('email_list')
 
-    # Immediately return response to user with message
-    messages.success(request, f"Email to {email.recipient} is being sent in the background")
-    return redirect('email_list')
+    except Exception as e:
+        logger.error(f"Error in email_send view for email {pk}: {str(e)}")
+        messages.error(request, "Failed to send email. Please try again or contact support.")
+        return redirect('email_list')
